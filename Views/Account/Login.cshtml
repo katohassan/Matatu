@@ -1,0 +1,64 @@
+@model MatatuMVC.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<div class="auth-container">
+    <div class="glass p-10 rounded-5xl w-full max-w-[480px]">
+        <div class="auth-header mb-12">
+            <h2 class="text-4xl font-bold text-white tracking-tighter italic">Welcome Back</h2>
+            <p class="label-mono mt-2">Authorization Required</p>
+        </div>
+
+        <form asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="space-y-8">
+            <div asp-validation-summary="All" class="text-red-400 text-sm font-medium"></div>
+            
+            <div class="space-y-3">
+                <label asp-for="Email" class="label-mono">Network Identity (Email)</label>
+                <div class="input-wrap">
+                    <i class="fas fa-envelope text-white/30 mr-4"></i>
+                    <input asp-for="Email" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="name@example.com" />
+                </div>
+                <span asp-validation-for="Email" class="text-red-400 text-[10px] uppercase font-bold"></span>
+            </div>
+
+            <div class="space-y-3">
+                <label asp-for="Password" class="label-mono">Security Key</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock text-white/30 mr-4"></i>
+                    <input asp-for="Password" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="••••••••" />
+                </div>
+                <span asp-validation-for="Password" class="text-red-400 text-[10px] uppercase font-bold"></span>
+            </div>
+
+            <div class="flex justify-between items-center px-2">
+                <div class="flex items-center gap-3">
+                    <input asp-for="RememberMe" class="w-4 h-4 rounded border-white/10 bg-white/5" />
+                    <label asp-for="RememberMe" class="label-mono !text-[10px]">Stay Logged In</label>
+                </div>
+                <a href="#" class="text-indigo-400 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Recover Key</a>
+            </div>
+
+            <button type="submit" class="btn-primary py-5">INITIATE SESSION</button>
+        </form>
+
+        <div class="mt-12 text-center">
+            <p class="text-white/40 text-xs font-medium">New to the network? <a asp-action="Register" class="text-indigo-400 font-bold underline underline-offset-8 ml-2">GENERATE ACCOUNT</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}
+
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 90vh;
+        padding: 2rem;
+    }
+</style>

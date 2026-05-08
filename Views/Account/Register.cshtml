@@ -1,0 +1,101 @@
+@model MatatuMVC.ViewModels.RegisterViewModel
+@using MatatuMVC.Models
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="auth-container">
+    <div class="glass p-10 rounded-5xl w-full max-w-[640px]">
+        <div class="auth-header mb-10 text-center">
+            <h2 class="text-4xl font-bold text-white tracking-tighter italic">Create Account</h2>
+            <p class="label-mono mt-2">Initialize New Identity</p>
+        </div>
+
+        <form asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="space-y-6">
+            <div asp-validation-summary="All" class="text-red-400 text-sm font-medium"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <label asp-for="Name" class="label-mono">Full Name</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user text-white/30 mr-4"></i>
+                        <input asp-for="Name" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="John Doe" />
+                    </div>
+                    <span asp-validation-for="Name" class="text-red-400 text-[10px] uppercase font-bold"></span>
+                </div>
+
+                <div class="space-y-3">
+                    <label asp-for="Email" class="label-mono">Email Address</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-envelope text-white/30 mr-4"></i>
+                        <input asp-for="Email" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="name@example.com" />
+                    </div>
+                    <span asp-validation-for="Email" class="text-red-400 text-[10px] uppercase font-bold"></span>
+                </div>
+
+                <div class="space-y-3">
+                    <label asp-for="Phone" class="label-mono">Phone Connection</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-phone text-white/30 mr-4"></i>
+                        <input asp-for="Phone" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="+256 700..." />
+                    </div>
+                    <span asp-validation-for="Phone" class="text-red-400 text-[10px] uppercase font-bold"></span>
+                </div>
+
+                <div class="space-y-3">
+                    <label asp-for="Role" class="label-mono">Account Type</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user-tag text-white/30 mr-4"></i>
+                        <select asp-for="Role" class="bg-transparent border-none outline-none font-bold w-full text-white/70 appearance-none" asp-items="Html.GetEnumSelectList<Role>()">
+                        </select>
+                    </div>
+                    <span asp-validation-for="Role" class="text-red-400 text-[10px] uppercase font-bold"></span>
+                </div>
+
+                <div class="space-y-3">
+                    <label asp-for="Password" class="label-mono">Security Key</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock text-white/30 mr-4"></i>
+                        <input asp-for="Password" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="••••••••" />
+                    </div>
+                    <span asp-validation-for="Password" class="text-red-400 text-[10px] uppercase font-bold"></span>
+                </div>
+
+                <div class="space-y-3">
+                    <label asp-for="ConfirmPassword" class="label-mono">Confirm Key</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock text-white/30 mr-4"></i>
+                        <input asp-for="ConfirmPassword" class="bg-transparent border-none outline-none font-bold w-full text-white placeholder:text-white/20" placeholder="••••••••" />
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" class="text-red-400 text-[10px] uppercase font-bold"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary mt-6 py-5">GENERATE IDENTITY</button>
+        </form>
+
+        <div class="mt-10 text-center">
+            <p class="text-white/40 text-xs font-medium">Already recognized? <a asp-action="Login" class="text-indigo-400 font-bold underline underline-offset-8 ml-2">INITIATE SESSION</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}
+
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 95vh;
+        padding: 2rem;
+    }
+    
+    select option {
+        background: #1e1b4b;
+        color: white;
+    }
+</style>

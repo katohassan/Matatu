@@ -1,0 +1,24 @@
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# User Secrets
+secrets.json
+
+# Environment files
+.env
+.env.*
