@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<MatatuContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -56,6 +57,22 @@ using (var scope = app.Services.CreateScope())
             }
         }
     }
+
+    // Seed Driver User
+    var existingDriver = await userManager.FindByEmailAsync("driver@matatu.ug");
+    if (existingDriver == null)
+    {
+        var driver = new User
+        {
+            UserName = "driver@matatu.ug",
+            Email = "driver@matatu.ug",
+            Name = "Mukasa John",
+            Role = Role.Driver,
+            EmailConfirmed = true
+        };
+        var seedPassword = builder.Configuration["SeedUser:Password"] ?? "Hassan@20";
+        await userManager.CreateAsync(driver, seedPassword);
+    }
 }
 
 // Configure the HTTP request pipeline.
@@ -75,6 +92,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+app.MapControllers(); // for API controllers
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
