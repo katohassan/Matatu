@@ -509,7 +509,13 @@
             </div>
         </div>
         
-        <button onclick="closeTicketModal()" class="btn-primary">DISMISS</button>
+        <div id="cancelTicketArea" class="mt-8 border-t border-white/5 pt-8">
+            <button id="cancelTicketBtn" onclick="cancelCurrentTicket()" class="text-red-400 text-[10px] font-bold uppercase tracking-widest hover:text-red-300 transition-colors">
+                Cancel Ticket & Request Refund
+            </button>
+        </div>
+        
+        <button onclick="closeTicketModal()" class="btn-primary mt-8">DISMISS</button>
     </div>
 </div>
 
@@ -839,13 +845,23 @@
             } catch (e) { console.error(e); }
         }
 
+        let currentTicketId = null;
         function showTicketDetails(ticket) {
+            currentTicketId = ticket.id;
             document.getElementById('modalTicketCode').innerText = ticket.ticketCode;
             document.getElementById('modalTicketRoute').innerText = ticket.route;
             document.getElementById('modalTicketStatus').innerText = ticket.status.toUpperCase();
             document.getElementById('modalTicketFare').innerText = 'UGX ' + ticket.amount.toLocaleString();
             
-            // Generate QR Code
+            // Hide cancel button if already boarded or cancelled
+            const cancelArea = document.getElementById('cancelTicketArea');
+            if (ticket.status === 'Paid') {
+                cancelArea.classList.remove('hidden');
+            } else {
+                cancelArea.classList.add('hidden');
+            }
+
+            // Generate QR Code ... (rest of function)
             document.getElementById('ticketQRCode').innerHTML = "";
             new QRCode(document.getElementById('ticketQRCode'), {
                 text: ticket.ticketCode,
@@ -857,6 +873,38 @@
             });
 
             document.getElementById('ticketModal').classList.remove('hidden');
+        }
+
+        async function cancelCurrentTicket() {
+            if (!currentTicketId) return;
+            const reason = prompt("Please enter reason for cancellation:");
+            if (!reason) return;
+
+            const btn = document.getElementById('cancelTicketBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Refund...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/ticketing/tickets/${currentTicketId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showToast(data.message, 'success');
+                    closeTicketModal();
+                    fetchTripHistory();
+                } else {
+                    showToast(data.error || 'Cancellation failed', 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            } finally {
+                btn.innerHTML = 'Cancel Ticket & Request Refund';
+                btn.disabled = false;
+            }
         }
 
         function closeTicketModal() {

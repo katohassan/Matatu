@@ -102,6 +102,18 @@ public class Payment
     [ForeignKey(nameof(TicketId))] public Ticket? Ticket { get; set; }
 }
 
+public class Cancellation
+{
+    public int Id { get; set; }
+    public int TicketId { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public decimal RefundAmount { get; set; }
+    public DateTime CancelledAt { get; set; } = DateTime.UtcNow;
+    public string CancelledByUserId { get; set; } = string.Empty;
+
+    [ForeignKey(nameof(TicketId))] public Ticket? Ticket { get; set; }
+}
+
 // ─── Legacy / Preserved ──────────────────────────────────────────────────────
 public class Booking
 {

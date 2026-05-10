@@ -381,6 +381,54 @@ public class TicketingController : ControllerBase
         return Ok(history);
     }
 
+    // ── POST /api/ticketing/tickets/{id}/cancel ─────────────────────────────
+    [HttpPost("tickets/{id}/cancel")]
+    public async Task<IActionResult> CancelTicket(int id, [FromBody] CancelTicketDto dto)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+
+        var ticket = await _db.Tickets
+            .Include(t => t.Trip)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (ticket == null) return NotFound();
+        if (ticket.Status == TicketStatus.Cancelled) return BadRequest(new { error = "Already cancelled." });
+        if (ticket.Status == TicketStatus.Boarded) return BadRequest(new { error = "Cannot cancel a boarded ticket." });
+
+        // Check 15 min rule
+        if (ticket.Trip != null)
+        {
+            var diff = ticket.Trip.StartTime - DateTime.UtcNow;
+            if (diff.TotalMinutes < 15 && ticket.Trip.Status == TripStatus.Active)
+                return BadRequest(new { error = "Cancellations only allowed up to 15 mins before departure." });
+        }
+
+        // Refund Logic (90% refund for demo purposes)
+        decimal refund = (ticket.Status == TicketStatus.Paid || ticket.Status == TicketStatus.Boarded) ? ticket.Amount * 0.9m : 0;
+
+        ticket.Status = TicketStatus.Cancelled;
+        if (ticket.Trip != null && ticket.Trip.PassengerCount > 0)
+            ticket.Trip.PassengerCount--;
+
+        var cancellation = new Cancellation
+        {
+            TicketId = ticket.Id,
+            Reason = dto.Reason,
+            RefundAmount = refund,
+            CancelledByUserId = user.Id
+        };
+
+        _db.Cancellations.Add(cancellation);
+        await _db.SaveChangesAsync();
+
+        // Send SMS notification
+        await _smsService.SendSmsAsync(ticket.PassengerPhone, 
+            $"MoveSafe: Ticket {ticket.TicketCode} cancelled. Refund of UGX {refund} initiated.");
+
+        return Ok(new { message = "Ticket cancelled successfully.", refund });
+    }
+
     // ── POST /api/ticketing/verify ───────────────────────────────────────────
     [HttpPost("verify")]
     public async Task<IActionResult> VerifyTicket([FromBody] VerifyTicketDto dto)
@@ -418,3 +466,4 @@ public record IssueTicketDto(int TripId, string PassengerPhone, string? Passenge
 public record ConfirmPaymentDto(string CheckoutRequestId);
 public record VerifyTicketDto(string TicketCode);
 public record LocationUpdateDto(double Lat, double Lng);
+public record CancelTicketDto(string Reason);
