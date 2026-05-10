@@ -48,6 +48,13 @@
         </div>
     </header>
 
+    <div id="radarMap" class="w-full h-48 glass rounded-3xl mb-8 border border-white/5 overflow-hidden shadow-2xl relative">
+        <div id="map" class="w-full h-full grayscale-[0.6] invert-[0.9] opacity-80"></div>
+        <div class="absolute top-4 left-4 z-[400] glass px-3 py-1.5 rounded-xl label-mono text-[8px] flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> LIVE RADAR
+        </div>
+    </div>
+
     <div class="card-premium mb-12 relative group">
         <div class="absolute -top-4 -right-4 py-2 px-6 glass rounded-2xl label-mono text-white/60">Transit Radar</div>
         <div class="space-y-10 pt-4">
@@ -581,6 +588,119 @@
             }, 600);
         }
 
+        // --- GPS & Map Logic ---
+        let mainMap = null;
+        let matatuMap = null; // Large Map
+        let vehicleMarkers = {};
+        let vehicleMarkersLarge = {};
+        let locationSharingInterval = null;
+
+        function initMap() {
+            // 1. Initialize Home Radar Map
+            if (!mainMap && document.getElementById('map')) {
+                mainMap = L.map('map', { 
+                    zoomControl: false,
+                    attributionControl: false 
+                }).setView([0.3476, 32.5825], 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mainMap);
+            }
+
+            // 2. Initialize Large Map View
+            if (!matatuMap && document.getElementById('matatuMap')) {
+                matatuMap = L.map('matatuMap', { 
+                    zoomControl: false,
+                    attributionControl: false 
+                }).setView([0.3476, 32.5825], 14);
+
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(matatuMap);
+            }
+
+            // Invalidate size in case containers were hidden
+            if (mainMap) mainMap.invalidateSize();
+            if (matatuMap) matatuMap.invalidateSize();
+
+            // Start Radar Polling if not already started
+            if (!window.radarStarted) {
+                setInterval(pollActiveVehicles, 10000);
+                pollActiveVehicles();
+                window.radarStarted = true;
+            }
+        }
+
+        async function pollActiveVehicles() {
+            try {
+                const res = await fetch('/api/ticketing/trips/active');
+                const trips = await res.json();
+                
+                // Cleanup old markers
+                const currentIds = trips.map(t => t.id);
+                [vehicleMarkers, vehicleMarkersLarge].forEach(markerObj => {
+                    Object.keys(markerObj).forEach(id => {
+                        if (!currentIds.includes(parseInt(id))) {
+                            if (mainMap && markerObj === vehicleMarkers) mainMap.removeLayer(markerObj[id]);
+                            if (matatuMap && markerObj === vehicleMarkersLarge) matatuMap.removeLayer(markerObj[id]);
+                            delete markerObj[id];
+                        }
+                    });
+                });
+
+                trips.forEach(t => {
+                    const lat = t.lat || (0.3476 + (Math.random() - 0.5) * 0.01);
+                    const lng = t.lng || (32.5825 + (Math.random() - 0.5) * 0.01);
+
+                    const iconHtml = `<div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center border-2 border-white shadow-lg shadow-indigo-500/50">
+                                        <i class="fas fa-bus text-white text-xs"></i>
+                                      </div>`;
+                    
+                    const matatuIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml, iconSize: [32, 32], iconAnchor: [16, 16] });
+
+                    // Update Home Map
+                    if (mainMap) {
+                        if (vehicleMarkers[t.id]) {
+                            vehicleMarkers[t.id].setLatLng([lat, lng]);
+                        } else {
+                            vehicleMarkers[t.id] = L.marker([lat, lng], { icon: matatuIcon }).addTo(mainMap);
+                        }
+                    }
+
+                    // Update Large Map
+                    if (matatuMap) {
+                        if (vehicleMarkersLarge[t.id]) {
+                            vehicleMarkersLarge[t.id].setLatLng([lat, lng]);
+                        } else {
+                            vehicleMarkersLarge[t.id] = L.marker([lat, lng], { icon: matatuIcon })
+                                .addTo(matatuMap)
+                                .bindPopup(`<div class="text-slate-900 font-bold p-1">${t.route}<br/><span class="text-[10px] text-slate-500">${t.vehicle}</span></div>`);
+                        }
+                    }
+                });
+            } catch (e) { console.error('Radar failed', e); }
+        }
+
+        function startLocationSharing(tripId) {
+            if (locationSharingInterval) clearInterval(locationSharingInterval);
+            
+            locationSharingInterval = setInterval(() => {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(async (pos) => {
+                        const { latitude, longitude } = pos.coords;
+                        try {
+                            await fetch(`/api/ticketing/trips/${tripId}/location`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ lat: latitude, lng: longitude })
+                            });
+                        } catch (e) {}
+                    });
+                }
+            }, 10000);
+        }
+
+        function stopLocationSharing() {
+            if (locationSharingInterval) clearInterval(locationSharingInterval);
+        }
+
         // --- QR Scanner & History Logic ---
         let html5QrCode = null;
 
@@ -711,6 +831,11 @@
 
         function switchTab(tabName) {
             if (tabName === 'Trips') fetchTripHistory();
+            if (tabName === 'Map') {
+                setTimeout(() => {
+                    if (typeof initMap === 'function') initMap();
+                }, 300);
+            }
             // Reset all nav tabs
             const tabs = ['Home', 'Inbox', 'Trips', 'Profile'];
             tabs.forEach(t => {

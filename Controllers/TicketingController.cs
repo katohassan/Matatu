@@ -312,9 +312,25 @@ public class TicketingController : ControllerBase
             passengerCount = trip.PassengerCount,
             capacity,
             percentFull = (int)Math.Round((double)trip.PassengerCount / capacity * 100),
-            totalRevenue = tickets.Where(t => t.Status == TicketStatus.Paid).Sum(t => t.Amount),
+            totalRevenue = tickets.Where(t => t.Status == TicketStatus.Paid || t.Status == TicketStatus.Boarded).Sum(t => t.Amount),
+            lat = trip.CurrentLat,
+            lng = trip.CurrentLng,
             tickets
         });
+    }
+
+    // ── POST /api/ticketing/trips/{id}/location ─────────────────────────────
+    [HttpPost("trips/{id}/location")]
+    public async Task<IActionResult> UpdateLocation(int id, [FromBody] LocationUpdateDto dto)
+    {
+        var trip = await _db.Trips.FindAsync(id);
+        if (trip == null || trip.Status != TripStatus.Active) return NotFound();
+
+        trip.CurrentLat = dto.Lat;
+        trip.CurrentLng = dto.Lng;
+        await _db.SaveChangesAsync();
+
+        return Ok();
     }
 
     // ── GET /api/ticketing/history ───────────────────────────────────────────
@@ -381,3 +397,4 @@ public record StartTripDto(int VehicleId, int RouteId, string? DriverId);
 public record IssueTicketDto(int TripId, string PassengerPhone, string? PassengerId, decimal Amount, PaymentProvider PaymentProvider);
 public record ConfirmPaymentDto(string CheckoutRequestId);
 public record VerifyTicketDto(string TicketCode);
+public record LocationUpdateDto(double Lat, double Lng);

@@ -58,6 +58,8 @@ public class Trip
     public DateTime? EndTime { get; set; }
     public TripStatus Status { get; set; } = TripStatus.Active;
     public int PassengerCount { get; set; } = 0;
+    public double? CurrentLat { get; set; }
+    public double? CurrentLng { get; set; }
 
     [ForeignKey(nameof(VehicleId))] public Vehicle? Vehicle { get; set; }
     [ForeignKey(nameof(RouteId))]   public MatatuRoute? Route { get; set; }
