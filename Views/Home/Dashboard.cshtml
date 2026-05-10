@@ -967,14 +967,6 @@
 
         function switchTab(tabName) {
             try {
-                if (tabName === 'Trips') fetchTripHistory();
-                if (tabName === 'Map') {
-                    setTimeout(() => {
-                        if (typeof initMap === 'function') initMap();
-                    }, 300);
-                }
-                if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
-                
                 // Reset all nav tabs (expanded list)
                 const tabs = ['Home', 'Inbox', 'Map', 'Tickets', 'Trips', 'Profile', 'Admin'];
                 tabs.forEach(t => {
@@ -992,19 +984,26 @@
                     activeEl.classList.remove('text-white/40');
                 }
 
-                // Hide all views
+                // Hide all views explicitly
                 document.querySelectorAll('.tab-view').forEach(view => {
-                    view.classList.add('hidden', 'opacity-0');
+                    view.style.display = 'none';
+                    view.classList.add('hidden');
                 });
 
-                // Show selected view
+                // Show selected view explicitly
                 const activeView = document.getElementById(`view-${tabName}`);
                 if (activeView) {
-                    activeView.classList.remove('hidden');
-                    // Small delay for display block to register before fading in
-                    setTimeout(() => {
-                        activeView.classList.remove('opacity-0');
-                    }, 50);
+                    activeView.style.display = (tabName === 'Map') ? 'block' : 'block';
+                    activeView.classList.remove('hidden', 'opacity-0');
+                    
+                    if (tabName === 'Trips') fetchTripHistory();
+                    if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
+                    if (tabName === 'Map') {
+                        setTimeout(() => {
+                            if (typeof initMap === 'function') initMap();
+                        }, 100);
+                    }
+                    if (tabName === 'Tickets' && typeof initTicketingView === 'function') initTicketingView();
                 }
             } catch (err) {
                 console.error("switchTab failed", err);
