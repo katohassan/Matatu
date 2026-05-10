@@ -4,6 +4,8 @@ using MatatuMVC.Models;
 using MatatuMVC.Services;
 using Microsoft.AspNetCore.Identity;
 
+Console.WriteLine(">>> MATATU SYSTEM BOOTING: " + DateTime.UtcNow);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -12,9 +14,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<MatatuContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddMemoryCache();
+
+// Typed HttpClients for external services
 builder.Services.AddHttpClient<ISmsService, AfricaTalkingSmsService>();
+builder.Services.AddHttpClient<IPesaPalService, PesaPalService>();
+
 builder.Services.AddScoped<IMobileMoneyService, MobileMoneyService>();
 builder.Services.AddScoped<IPesaPalService, PesaPalService>();
+builder.Services.AddScoped<ISmsService, AfricaTalkingSmsService>();
 
 builder.Services.AddIdentity<User, IdentityRole>(options => {
     options.Password.RequireDigit = true;
@@ -39,10 +46,15 @@ var app = builder.Build();
 // Seed Default User & Apply Migrations
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<MatatuContext>();
-    await context.Database.MigrateAsync();
+    var services = scope.ServiceProvider;
+    try {
+        var context = services.GetRequiredService<MatatuContext>();
+        await context.Database.MigrateAsync();
+    } catch (Exception ex) {
+        Console.WriteLine(">>> MIGRATION ERROR: " + ex.Message);
+    }
 
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    var userManager = services.GetRequiredService<UserManager<User>>();
     var existingUser = await userManager.FindByEmailAsync("hassankato272@gmail.com");
     if (existingUser == null)
     {
