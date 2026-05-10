@@ -378,6 +378,9 @@ public class TicketingController : ControllerBase
             })
             .ToListAsync();
 
+        if (!history.Any()) {
+            return Ok(new List<object>()); 
+        }
         return Ok(history);
     }
 

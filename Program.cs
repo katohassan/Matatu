@@ -47,52 +47,45 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<MatatuContext>();
     try {
-        var context = services.GetRequiredService<MatatuContext>();
         await context.Database.MigrateAsync();
     } catch (Exception ex) {
         Console.WriteLine(">>> MIGRATION ERROR: " + ex.Message);
     }
 
     var userManager = services.GetRequiredService<UserManager<User>>();
-    var existingUser = await userManager.FindByEmailAsync("hassankato272@gmail.com");
-    if (existingUser == null)
-    {
-        var user = new User
+        // Seed Driver User
+        var existingDriver = await userManager.FindByEmailAsync("driver@matatu.ug");
+        if (existingDriver == null)
         {
-            UserName = "hassankato272@gmail.com",
-            Email = "hassankato272@gmail.com",
-            Name = "Kato Hassan",
-            Role = Role.Passenger,
-            EmailConfirmed = true
-        };
-        var seedPassword = builder.Configuration["SeedUser:Password"] ?? "Hassan@20";
-        var result = await userManager.CreateAsync(user, seedPassword);
-        if (!result.Succeeded)
-        {
-            // Log errors to console for debugging
-            foreach (var error in result.Errors)
+            var driver = new User
             {
-                Console.WriteLine($"Seed Error: {error.Description}");
-            }
+                UserName = "driver@matatu.ug",
+                Email = "driver@matatu.ug",
+                Name = "Mukasa John",
+                Role = Role.Driver,
+                EmailConfirmed = true,
+                PhoneNumber = "0770000001"
+            };
+            await userManager.CreateAsync(driver, "Hassan@20");
         }
-    }
 
-    // Seed Driver User
-    var existingDriver = await userManager.FindByEmailAsync("driver@matatu.ug");
-    if (existingDriver == null)
-    {
-        var driver = new User
+        // Seed some Demo Trips if none exist
+        if (!context.Trips.Any())
         {
-            UserName = "driver@matatu.ug",
-            Email = "driver@matatu.ug",
-            Name = "Mukasa John",
-            Role = Role.Driver,
-            EmailConfirmed = true
-        };
-        var seedPassword = builder.Configuration["SeedUser:Password"] ?? "Hassan@20";
-        await userManager.CreateAsync(driver, seedPassword);
-    }
+            var route = context.Routes.First();
+            var vehicle = context.Vehicles.First();
+            context.Trips.Add(new Trip { 
+                VehicleId = vehicle.Id, 
+                RouteId = route.Id, 
+                Status = TripStatus.Active, 
+                StartTime = DateTime.UtcNow,
+                CurrentLat = 0.3476,
+                CurrentLng = 32.5825
+            });
+            await context.SaveChangesAsync();
+        }
 }
 
 // Configure the HTTP request pipeline.
