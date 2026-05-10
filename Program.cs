@@ -55,21 +55,35 @@ using (var scope = app.Services.CreateScope())
     }
 
     var userManager = services.GetRequiredService<UserManager<User>>();
-        // Seed Driver User
-        var existingDriver = await userManager.FindByEmailAsync("driver@matatu.ug");
-        if (existingDriver == null)
-        {
-            var driver = new User
-            {
-                UserName = "driver@matatu.ug",
-                Email = "driver@matatu.ug",
-                Name = "Mukasa John",
-                Role = Role.Driver,
-                EmailConfirmed = true,
-                PhoneNumber = "0770000001"
-            };
-            await userManager.CreateAsync(driver, "Hassan@20");
-        }
+    
+    // 1. Seed Passenger User (YOU)
+    var existingUser = await userManager.FindByEmailAsync("hassankato272@gmail.com");
+    if (existingUser == null)
+    {
+        var user = new User {
+            UserName = "hassankato272@gmail.com",
+            Email = "hassankato272@gmail.com",
+            Name = "Kato Hassan",
+            Role = Role.Passenger,
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(user, "Hassan@20");
+    }
+
+    // 2. Seed Driver User
+    var existingDriver = await userManager.FindByEmailAsync("driver@matatu.ug");
+    if (existingDriver == null)
+    {
+        var driver = new User {
+            UserName = "driver@matatu.ug",
+            Email = "driver@matatu.ug",
+            Name = "Mukasa John",
+            Role = Role.Driver,
+            EmailConfirmed = true,
+            PhoneNumber = "0770000001"
+        };
+        await userManager.CreateAsync(driver, "Hassan@20");
+    }
 
         // Seed some Demo Trips if none exist
         if (!context.Trips.Any())
