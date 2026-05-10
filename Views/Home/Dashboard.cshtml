@@ -224,22 +224,20 @@
     </div>
 </div>
 
-<!-- Profile View (Hard-coded for absolute visibility) -->
+<!-- Profile View (Dynamic API Loaded) -->
 <div id="view-Profile" class="tab-view hidden p-8 pb-32 min-h-screen relative" style="background:#0f172a;z-index:5;">
     <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">My Account</h3>
     
-    <div class="glass p-8 rounded-3xl mb-8 text-center border border-white/10 shadow-2xl">
-        <div class="w-28 h-28 rounded-full mx-auto mb-6 bg-indigo-500/20 p-1 border-2 border-indigo-500/30">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@(user?.Name ?? "Guest")" class="w-full h-full rounded-full bg-slate-800" />
+    <div id="profileContainer">
+        <!-- Spinner while loading -->
+        <div class="glass p-12 rounded-3xl text-center border border-white/5">
+            <i class="fas fa-circle-notch fa-spin text-indigo-400 text-3xl mb-4"></i>
+            <p class="text-white/40 text-sm">Loading your profile...</p>
         </div>
-        <h4 class="font-bold text-2xl text-white mb-1">@(user?.Name ?? "Guest Traveler")</h4>
-        <p class="text-indigo-300/60 text-sm font-medium tracking-wide">@(user?.Email ?? "Preview Mode")</p>
-        <span class="inline-block mt-4 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
-            @(user?.Role.ToString() ?? "Guest")
-        </span>
     </div>
-    
-    <div class="space-y-4">
+
+    <!-- Static Navigation Actions -->
+    <div class="mt-8 space-y-4">
         <div class="glass p-5 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/5">
             <div class="flex items-center gap-4">
                 <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-cog"></i></div>
@@ -248,14 +246,6 @@
             <i class="fas fa-chevron-right text-white/20 text-xs"></i>
         </div>
         
-        <div class="glass p-5 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/5">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-shield-alt"></i></div>
-                <span class="font-bold text-white/80">Security & Privacy</span>
-            </div>
-            <i class="fas fa-chevron-right text-white/20 text-xs"></i>
-        </div>
-
         @if (User.Identity?.IsAuthenticated == true)
         {
             <form asp-controller="Account" asp-action="Logout" method="post" class="mt-8">
@@ -266,12 +256,6 @@
                     </div>
                 </button>
             </form>
-        }
-        else
-        {
-            <a asp-controller="Account" asp-action="Login" class="w-full btn-primary py-5 text-center block mt-8 shadow-xl shadow-indigo-500/20">
-                SIGN IN TO YOUR ACCOUNT
-            </a>
         }
     </div>
 </div>
@@ -571,8 +555,56 @@
                 if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
                 if (tabName === 'Map' && typeof initMap === 'function') setTimeout(initMap, 100);
                 if (tabName === 'Tickets' && typeof initTicketingView === 'function') initTicketingView();
+                if (tabName === 'Profile') fetchProfile();
             } catch (e) { console.error("Nav Error:", e); }
         };
+
+        async function fetchProfile() {
+            const container = document.getElementById('profileContainer');
+            try {
+                const res = await fetch('/api/accountapi/profile');
+                if (res.status === 401) {
+                    container.innerHTML = `
+                        <div class="glass p-10 rounded-3xl text-center border border-white/5 shadow-xl">
+                            <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-user-lock text-indigo-400 text-2xl"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-white mb-2">Guest Mode</h4>
+                            <p class="text-white/40 text-sm mb-8 leading-relaxed">Please sign in or create an account to view your profile and trip history.</p>
+                            <a href="/Account/Login" class="btn-primary inline-block !w-auto px-10">SIGN IN NOW</a>
+                        </div>`;
+                    return;
+                }
+
+                const data = await res.json();
+                container.innerHTML = `
+                    <div class="glass p-8 rounded-3xl mb-8 text-center border border-white/10 shadow-2xl">
+                        <div class="w-28 h-28 rounded-full mx-auto mb-6 bg-indigo-500/20 p-1 border-2 border-indigo-500/30">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name}" class="w-full h-full rounded-full bg-slate-800" />
+                        </div>
+                        <h4 class="font-bold text-2xl text-white mb-1">${data.name}</h4>
+                        <p class="text-indigo-300/60 text-sm font-medium tracking-wide mb-4">${data.email}</p>
+                        
+                        <div class="flex flex-wrap justify-center gap-2 mb-6">
+                            <span class="px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">${data.role}</span>
+                            <span class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest">Joined ${data.joinedDate}</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-6">
+                            <div class="text-left">
+                                <p class="text-[9px] text-white/30 font-bold uppercase mb-1">Phone Number</p>
+                                <p class="text-sm font-bold text-white/80">${data.phoneNumber}</p>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-[9px] text-white/30 font-bold uppercase mb-1">Verified Status</p>
+                                <p class="text-sm font-bold text-green-400"><i class="fas fa-check-circle mr-1"></i> Verified</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } catch (err) {
+                container.innerHTML = '<p class="text-red-400 text-sm text-center">Failed to load profile data.</p>';
+            }
+        }
 
         const isAuthenticated = @(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false");
 
