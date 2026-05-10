@@ -1,0 +1,8 @@
+bin/
+obj/
+.git/
+.vscode/
+.vs/
+*.user
+*.suo
+*.sln.docstates
