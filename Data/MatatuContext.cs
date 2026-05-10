@@ -14,7 +14,8 @@ public class MatatuContext : IdentityDbContext<User>
     public DbSet<MatatuRoute> Routes      { get; set; }
     public DbSet<Trip>        Trips       { get; set; }
     public DbSet<Ticket>      Tickets     { get; set; }
-    public DbSet<Payment>     Payments    { get; set; }
+    public DbSet<Payment>     Payments      { get; set; }
+    public DbSet<Cancellation> Cancellations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

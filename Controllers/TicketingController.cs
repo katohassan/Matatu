@@ -371,7 +371,7 @@ public class TicketingController : ControllerBase
                 t.Id,
                 t.TicketCode,
                 t.Amount,
-                t.Status = t.Status.ToString(),
+                Status = t.Status.ToString(),
                 t.IssuedAt,
                 Route = t.Trip != null && t.Trip.Route != null ? $"{t.Trip.Route.Origin} → {t.Trip.Route.Destination}" : "Unknown",
                 Vehicle = t.Trip != null && t.Trip.Vehicle != null ? t.Trip.Vehicle.PlateNumber : "Unknown"
