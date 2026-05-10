@@ -12,10 +12,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<MatatuContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddMemoryCache();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<ISmsService, AfricaTalkingSmsService>();
 builder.Services.AddScoped<IMobileMoneyService, MobileMoneyService>();
 builder.Services.AddScoped<IPesaPalService, PesaPalService>();
-builder.Services.AddScoped<ISmsService, AfricaTalkingSmsService>();
 
 builder.Services.AddIdentity<User, IdentityRole>(options => {
     options.Password.RequireDigit = true;
