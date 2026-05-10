@@ -966,47 +966,55 @@
         }
 
         function switchTab(tabName) {
+            console.log(">>> Switching to Tab:", tabName);
             try {
-                // Reset all nav tabs (expanded list)
-                const tabs = ['Home', 'Inbox', 'Map', 'Tickets', 'Trips', 'Profile', 'Admin'];
-                tabs.forEach(t => {
-                    const el = document.getElementById(`tab-${t}`);
-                    if (el) {
-                        el.classList.remove('active', 'text-indigo-400');
-                        el.classList.add('text-white/40');
-                    }
-                });
-
-                // Set active nav tab
-                const activeEl = document.getElementById(`tab-${tabName}`);
-                if (activeEl) {
-                    activeEl.classList.add('active', 'text-indigo-400');
-                    activeEl.classList.remove('text-white/40');
-                }
-
-                // Hide all views explicitly
-                document.querySelectorAll('.tab-view').forEach(view => {
-                    view.style.display = 'none';
-                    view.classList.add('hidden');
-                });
-
-                // Show selected view explicitly
-                const activeView = document.getElementById(`view-${tabName}`);
-                if (activeView) {
-                    activeView.style.display = (tabName === 'Map') ? 'block' : 'block';
-                    activeView.classList.remove('hidden', 'opacity-0');
+                // 1. Identify all Tabs and Views
+                const tabIds = ['Home', 'Inbox', 'Map', 'Tickets', 'Trips', 'Profile', 'Admin'];
+                
+                // 2. Clear all active states and hide all views
+                tabIds.forEach(id => {
+                    const tabEl = document.getElementById(`tab-${id}`);
+                    const viewEl = document.getElementById(`view-${id}`);
                     
-                    if (tabName === 'Trips') fetchTripHistory();
-                    if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
-                    if (tabName === 'Map') {
-                        setTimeout(() => {
-                            if (typeof initMap === 'function') initMap();
-                        }, 100);
+                    if (tabEl) {
+                        tabEl.classList.remove('active', 'text-indigo-400');
+                        tabEl.classList.add('text-white/40');
                     }
-                    if (tabName === 'Tickets' && typeof initTicketingView === 'function') initTicketingView();
+                    if (viewEl) {
+                        viewEl.style.display = 'none';
+                        viewEl.classList.add('hidden');
+                    }
+                });
+
+                // 3. Show the selected View
+                const activeView = document.getElementById(`view-${tabName}`);
+                const activeTab = document.getElementById(`tab-${tabName}`);
+
+                if (activeView) {
+                    activeView.style.display = 'block';
+                    activeView.classList.remove('hidden', 'opacity-0');
+                    console.log(">>> View Shown:", `view-${tabName}`);
+                } else {
+                    console.warn(">>> VIEW NOT FOUND:", `view-${tabName}`);
                 }
+
+                if (activeTab) {
+                    activeTab.classList.add('active', 'text-indigo-400');
+                    activeTab.classList.remove('text-white/40');
+                }
+
+                // 4. Trigger specific tab logic
+                if (tabName === 'Trips' && typeof fetchTripHistory === 'function') fetchTripHistory();
+                if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
+                if (tabName === 'Map') {
+                    setTimeout(() => {
+                        if (typeof initMap === 'function') initMap();
+                    }, 100);
+                }
+                if (tabName === 'Tickets' && typeof initTicketingView === 'function') initTicketingView();
+
             } catch (err) {
-                console.error("switchTab failed", err);
+                console.error("CRITICAL: switchTab failed", err);
             }
         }
 
