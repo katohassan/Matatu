@@ -16,13 +16,15 @@ public class TicketingController : ControllerBase
     private readonly MatatuContext _db;
     private readonly UserManager<User> _userManager;
     private readonly IPesaPalService _pesapalService;
+    private readonly ISmsService _smsService;
     private readonly IConfiguration _config;
 
-    public TicketingController(MatatuContext db, UserManager<User> userManager, IPesaPalService pesapalService, IConfiguration config)
+    public TicketingController(MatatuContext db, UserManager<User> userManager, IPesaPalService pesapalService, ISmsService smsService, IConfiguration config)
     {
         _db = db;
         _userManager = userManager;
         _pesapalService = pesapalService;
+        _smsService = smsService;
         _config = config;
     }
 
@@ -195,6 +197,14 @@ public class TicketingController : ControllerBase
             ticket.Status = TicketStatus.Paid;
             trip.PassengerCount++;
             await _db.SaveChangesAsync();
+
+            // Send SMS to Passenger
+            await _smsService.SendSmsAsync(ticket.PassengerPhone, 
+                $"MoveSafe Ticket Confirmed!\nCode: {ticket.TicketCode}\nRoute: {trip.Route?.Origin} -> {trip.Route?.Destination}\nFare: UGX {ticket.Amount}\nHave a safe journey!");
+            
+            // Send SMS to Conductor
+            await _smsService.SendSmsAsync(conductor.PhoneNumber ?? "", 
+                $"New Passenger Booked!\nPhone: {ticket.PassengerPhone}\nVehicle: {trip.Vehicle?.PlateNumber}");
         }
 
         return Ok(new
@@ -250,6 +260,16 @@ public class TicketingController : ControllerBase
             }
 
             await _db.SaveChangesAsync();
+
+            // Send SMS on successful mobile payment
+            if (payment.Ticket != null && payment.Ticket.Trip != null)
+            {
+                var t = payment.Ticket;
+                var tr = t.Trip;
+                await _smsService.SendSmsAsync(t.PassengerPhone, 
+                    $"MoveSafe Ticket Confirmed!\nCode: {t.TicketCode}\nRoute: {tr.Route?.Origin} -> {tr.Route?.Destination}\nFare: UGX {t.Amount}\nHave a safe journey!");
+            }
+
             return Ok(new { confirmed = true, transactionId = status.ConfirmationCode, ticketCode = payment.Ticket?.TicketCode, message = "Payment confirmed via PesaPal!" });
         }
 

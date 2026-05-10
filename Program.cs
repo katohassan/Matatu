@@ -15,6 +15,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IMobileMoneyService, MobileMoneyService>();
 builder.Services.AddScoped<IPesaPalService, PesaPalService>();
+builder.Services.AddScoped<ISmsService, AfricaTalkingSmsService>();
 
 builder.Services.AddIdentity<User, IdentityRole>(options => {
     options.Password.RequireDigit = true;
