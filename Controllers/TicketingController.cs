@@ -171,7 +171,7 @@ public class TicketingController : ControllerBase
                 string ipnUrl = _config["PesaPal:IpnUrl"] ?? "https://yourdomain.com/api/pesapal/ipn";
                 string ipnId = await _pesapalService.RegisterIpnAsync(ipnUrl);
 
-                string redirectUrl = "https://yourdomain.com/api/pesapal/callback";
+                string redirectUrl = "https://matatu-q3wb.onrender.com/api/pesapal/callback";
                 paymentResult = await _pesapalService.SubmitOrderAsync(payment, redirectUrl, ipnId);
 
                 if (paymentResult != null)
