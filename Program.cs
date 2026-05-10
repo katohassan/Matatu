@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MatatuMVC.Data;
 using MatatuMVC.Models;
+using MatatuMVC.Services;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<MatatuContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IMobileMoneyService, MobileMoneyService>();
+builder.Services.AddScoped<IPesaPalService, PesaPalService>();
 
 builder.Services.AddIdentity<User, IdentityRole>(options => {
     options.Password.RequireDigit = true;

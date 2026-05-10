@@ -227,6 +227,74 @@
     </div>
 </div>
 
+<!-- Tickets/Conductor View -->
+<div id="view-Tickets" class="tab-view hidden opacity-0 transition-opacity duration-300 p-8 pb-32 min-h-screen relative">
+    <header class="mb-8 border-b border-white/5 pb-4">
+        <h2 class="text-3xl font-display font-bold text-white tracking-tight">Ticketing</h2>
+        <p class="text-white/40 mt-1">Conductor Dashboard</p>
+    </header>
+
+    <!-- State 1: Start Trip -->
+    <div id="ticket-start-trip" class="glass p-6 rounded-3xl border border-white/10 space-y-4">
+        <h3 class="text-lg font-bold text-white">Start New Trip</h3>
+        <div>
+            <label class="block text-xs text-white/50 mb-1">Select Route</label>
+            <select id="routeSelect" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500"></select>
+        </div>
+        <div>
+            <label class="block text-xs text-white/50 mb-1">Vehicle ID (Demo uses ID: 1)</label>
+            <input id="vehicleSelect" type="number" value="1" placeholder="Vehicle ID" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none" />
+        </div>
+        <button onclick="startConductorTrip()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
+            Start Trip
+        </button>
+    </div>
+
+    <!-- State 2: Active Trip & Issue Ticket -->
+    <div id="ticket-active-trip" class="hidden space-y-6">
+        <!-- Live Capacity Card -->
+        <div class="glass p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 text-center">
+            <p class="text-indigo-300 text-xs font-bold tracking-widest uppercase mb-1">Live Capacity</p>
+            <div class="flex items-end justify-center gap-2">
+                <span id="livePassengerCount" class="text-5xl font-display font-black text-white">0</span>
+                <span id="liveCapacity" class="text-2xl text-white/40 mb-1">/ 14</span>
+            </div>
+            <p id="liveTripRoute" class="text-white/60 text-sm mt-2">Kampala → Kisaasi</p>
+        </div>
+
+        <!-- Issue Ticket Form -->
+        <div class="glass p-6 rounded-3xl border border-white/10 space-y-4 relative overflow-hidden">
+            <div id="fullOverlay" class="hidden absolute inset-0 bg-red-500/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                <i class="fas fa-ban text-4xl text-white mb-2"></i>
+                <h3 class="text-xl font-bold text-white">Vehicle is Full</h3>
+                <p class="text-white/80 text-sm">Cannot issue more tickets.</p>
+            </div>
+
+            <h3 class="text-lg font-bold text-white">Issue Ticket</h3>
+            <div>
+                <label class="block text-xs text-white/50 mb-1">Passenger Phone</label>
+                <input id="passengerPhone" type="tel" placeholder="e.g. 0771234567" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 mb-1">Payment Method</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="selectPaymentMethod(0, this)" class="pay-btn border border-indigo-500 bg-indigo-500/20 text-indigo-300 rounded-lg py-2 text-xs font-bold">M-Pesa</button>
+                    <button onclick="selectPaymentMethod(1, this)" class="pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold">Airtel</button>
+                    <button onclick="selectPaymentMethod(2, this)" class="pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold">MTN</button>
+                    <button onclick="selectPaymentMethod(4, this)" class="pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold">Cash</button>
+                </div>
+            </div>
+            <button id="issueBtn" onclick="issueTicket()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2">
+                Issue Ticket
+            </button>
+        </div>
+
+        <button onclick="endConductorTrip()" class="w-full border border-red-500/30 text-red-400 font-bold py-3.5 rounded-xl hover:bg-red-500/10 transition-colors">
+            End Trip
+        </button>
+    </div>
+</div>
+
 <!-- Map View -->
 <div id="view-Map" class="tab-view hidden opacity-0 transition-opacity duration-300" style="position:fixed;inset:0;bottom:72px;z-index:10;">
     <!-- Map Header -->
@@ -280,6 +348,7 @@
         <div id="tab-Home" onclick="switchTab('Home')" class="nav-item active flex flex-col items-center cursor-pointer text-indigo-400 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="mt-1 text-[10px] font-medium">Home</span></div>
         <div id="tab-Inbox" onclick="switchTab('Inbox')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors relative"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="mt-1 text-[10px] font-medium">Inbox</span><span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span></div>
         <div id="tab-Map" onclick="switchTab('Map')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg><span class="mt-1 text-[10px] font-medium">Map</span></div>
+        <div id="tab-Tickets" onclick="switchTab('Tickets')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5h-2M15 9h-2M15 13h-2M15 17h-2M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2M19 5h-2v14h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg><span class="mt-1 text-[10px] font-medium">Tickets</span></div>
         <div id="tab-Trips" onclick="switchTab('Trips')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/><line x1="7" x2="7" y1="15" y2="15"/><line x1="12" x2="12" y1="15" y2="15"/><line x1="17" x2="17" y1="15" y2="15"/></svg><span class="mt-1 text-[10px] font-medium">Trips</span></div>
         <div id="tab-Profile" onclick="switchTab('Profile')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="mt-1 text-[10px] font-medium">Profile</span></div>
     </nav>
@@ -463,6 +532,9 @@
                 if (tabName === 'Map') {
                     setTimeout(() => initMap(), 100);
                 }
+                if (tabName === 'Tickets') {
+                    initTicketingView();
+                }
             }, 50);
         }
 
@@ -604,6 +676,194 @@
         }
         checkUnread();
         setInterval(checkUnread, 10000);
+
+        // =============================================
+        // CONDUCTOR TICKETING LOGIC
+        // =============================================
+        let currentTripId = null;
+        let selectedPaymentProvider = 0; // MPesa default
+        let currentCapacity = 14;
+
+        async function initTicketingView() {
+            // Load routes
+            try {
+                const res = await fetch('/api/ticketing/routes');
+                const routes = await res.json();
+                const sel = document.getElementById('routeSelect');
+                sel.innerHTML = routes.map(r => `<option value="${r.id}">${r.origin} → ${r.destination} (UGX ${r.fare})</option>`).join('');
+            } catch (e) { console.error(e); }
+
+            // Check if active trip exists
+            try {
+                const res = await fetch('/api/ticketing/trips/active');
+                const trips = await res.json();
+                if (trips.length > 0) {
+                    const active = trips[0];
+                    currentTripId = active.id;
+                    updateLiveCapacity(active.passengerCount, active.capacity, active.route);
+                    document.getElementById('ticket-start-trip').classList.add('hidden');
+                    document.getElementById('ticket-active-trip').classList.remove('hidden');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function startConductorTrip() {
+            const routeId = document.getElementById('routeSelect').value;
+            const vehicleId = document.getElementById('vehicleSelect').value;
+            try {
+                const res = await fetch('/api/ticketing/trips/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vehicleId: parseInt(vehicleId), routeId: parseInt(routeId) })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to start trip');
+                
+                showToast('Trip Started Successfully', 'success');
+                currentTripId = data.id;
+                
+                const routeSelect = document.getElementById('routeSelect');
+                const routeText = routeSelect.options[routeSelect.selectedIndex].text.split(' (')[0];
+
+                updateLiveCapacity(0, data.capacity, routeText);
+                document.getElementById('ticket-start-trip').classList.add('hidden');
+                document.getElementById('ticket-active-trip').classList.remove('hidden');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function updateLiveCapacity(count, capacity, routeText) {
+            currentCapacity = capacity;
+            document.getElementById('livePassengerCount').innerText = count;
+            document.getElementById('liveCapacity').innerText = '/ ' + capacity;
+            if (routeText) document.getElementById('liveTripRoute').innerText = routeText;
+
+            const overlay = document.getElementById('fullOverlay');
+            if (count >= capacity) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function selectPaymentMethod(providerId, btn) {
+            selectedPaymentProvider = providerId;
+            document.querySelectorAll('.pay-btn').forEach(b => {
+                b.className = 'pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold';
+            });
+            btn.className = 'pay-btn border border-indigo-500 bg-indigo-500/20 text-indigo-300 rounded-lg py-2 text-xs font-bold';
+        }
+
+        async function issueTicket() {
+            if (!currentTripId) return;
+            const phone = document.getElementById('passengerPhone').value.trim();
+            if (!phone && selectedPaymentProvider !== 4) { 
+                showToast('Please enter passenger phone number', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('issueBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/ticketing/issue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tripId: currentTripId,
+                        passengerPhone: phone,
+                        amount: 0, 
+                        paymentProvider: selectedPaymentProvider
+                    })
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    if (data.isFull) updateLiveCapacity(data.passengerCount, data.capacity);
+                    throw new Error(data.error || 'Failed to issue ticket');
+                }
+
+                showToast(data.paymentPrompt, 'info');
+
+                console.log("Ticketing Response:", data);
+                const redirectUrl = data.pesapalRedirectUrl || data.redirectUrl;
+
+                if (redirectUrl) {
+                    showToast('Redirecting to PesaPal Checkout...', 'info');
+                    window.location.href = redirectUrl;
+                } else if (data.checkoutRequestId) {
+                    pollPayment(data.checkoutRequestId, data);
+                } else {
+                    updateLiveCapacity(data.passengerCount, data.capacity);
+                    document.getElementById('passengerPhone').value = '';
+                    showToast(`Ticket ${data.ticketCode} Issued (Cash)`, 'success');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+
+            } catch (e) {
+                showToast(e.message, 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function pollPayment(checkoutId, ticketData) {
+            const btn = document.getElementById('issueBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin gap-2"></i> Waiting for PIN...';
+
+            let attempts = 0;
+            const interval = setInterval(async () => {
+                attempts++;
+                if (attempts > 15) { 
+                    clearInterval(interval);
+                    showToast('Payment timed out. Try again.', 'error');
+                    btn.innerHTML = 'Issue Ticket';
+                    btn.disabled = false;
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/ticketing/payment/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ checkoutRequestId: checkoutId })
+                    });
+                    const data = await res.json();
+
+                    if (data.confirmed) {
+                        clearInterval(interval);
+                        showToast(`Payment received! Ticket ${data.ticketCode} is valid.`, 'success');
+                        
+                        const currentCount = parseInt(document.getElementById('livePassengerCount').innerText) + 1;
+                        updateLiveCapacity(currentCount, ticketData.capacity);
+                        
+                        document.getElementById('passengerPhone').value = '';
+                        btn.innerHTML = 'Issue Ticket';
+                        btn.disabled = false;
+                    }
+                } catch (e) { console.error(e); }
+            }, 2000);
+        }
+
+        async function endConductorTrip() {
+            if (!currentTripId || !confirm('Are you sure you want to end this trip?')) return;
+            try {
+                const res = await fetch(`/api/ticketing/trips/${currentTripId}/end`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Trip Ended! Revenue: UGX ${data.totalRevenue}`, 'success');
+                    currentTripId = null;
+                    document.getElementById('ticket-active-trip').classList.add('hidden');
+                    document.getElementById('ticket-start-trip').classList.remove('hidden');
+                } else {
+                    showToast(data.error, 'error');
+                }
+            } catch (e) { showToast('Error ending trip', 'error'); }
+        }
 
         // =============================================
         // MAP — Leaflet.js Initialization
