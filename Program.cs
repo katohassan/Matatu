@@ -49,9 +49,14 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<MatatuContext>();
     try {
+        Console.WriteLine(">>> SYSTEM: ENSURING DATABASE SCHEMA...");
+        // Ensure the database is created and migrations are applied
+        await context.Database.EnsureCreatedAsync(); 
         await context.Database.MigrateAsync();
+        Console.WriteLine(">>> SYSTEM: DATABASE READY.");
     } catch (Exception ex) {
-        Console.WriteLine(">>> MIGRATION ERROR: " + ex.Message);
+        Console.WriteLine(">>> DATABASE SCHEMA ERROR: " + ex.Message);
+        if (ex.InnerException != null) Console.WriteLine(">>> INNER: " + ex.InnerException.Message);
     }
 
     var userManager = services.GetRequiredService<UserManager<User>>();
