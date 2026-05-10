@@ -50,9 +50,10 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<MatatuContext>();
     try {
         Console.WriteLine(">>> SYSTEM: BUILDING DATABASE SCHEMA...");
-        // EnsureCreated builds the database directly from models, ignoring migration sync errors
-        await context.Database.EnsureCreatedAsync(); 
-        Console.WriteLine(">>> SYSTEM: DATABASE READY.");
+        // Use synchronous call to force the thread to wait until the file is physically written
+        context.Database.EnsureCreated(); 
+        Console.WriteLine(">>> SYSTEM: DATABASE READY. FLUSHING...");
+        Thread.Sleep(2000); // 2-second safety buffer for SQLite file lock
     } catch (Exception ex) {
         Console.WriteLine(">>> DATABASE SCHEMA ERROR: " + ex.Message);
     }
