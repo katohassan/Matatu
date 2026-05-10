@@ -16,6 +16,9 @@ public class MatatuContext : IdentityDbContext<User>
     public DbSet<Ticket>      Tickets     { get; set; }
     public DbSet<Payment>     Payments      { get; set; }
     public DbSet<Cancellation> Cancellations { get; set; }
+    public DbSet<AdminLog>     AdminLogs     { get; set; }
+    public DbSet<SystemSetting> SystemSettings { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

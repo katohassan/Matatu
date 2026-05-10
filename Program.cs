@@ -64,7 +64,7 @@ using (var scope = app.Services.CreateScope())
             UserName = "hassankato272@gmail.com",
             Email = "hassankato272@gmail.com",
             Name = "Kato Hassan",
-            Role = Role.Passenger,
+            Role = Role.Admin,
             EmailConfirmed = true
         };
         await userManager.CreateAsync(user, "Hassan@20");

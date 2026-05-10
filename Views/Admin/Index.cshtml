@@ -1,0 +1,234 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Admin Command Center";
+}
+
+<div class="min-h-screen bg-[#0f172a] text-white p-6 pb-32">
+    <!-- ADMIN SIDEBAR (Hidden on mobile, logic in script) -->
+    <div id="admin-sidebar" class="fixed left-0 top-0 h-full w-64 glass border-r border-white/5 z-50 p-6 hidden lg:block">
+        <h2 class="text-2xl font-black text-indigo-400 mb-10 tracking-tighter italic">ADMIN OS</h2>
+        <nav class="space-y-4">
+            <div onclick="showSection('overview')" class="admin-nav-item active flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+                <i class="fas fa-chart-pie text-indigo-400"></i>
+                <span class="font-bold text-sm">Overview</span>
+            </div>
+            <div onclick="showSection('users')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+                <i class="fas fa-users text-white/40"></i>
+                <span class="font-bold text-sm">Users</span>
+            </div>
+            <div onclick="showSection('trips')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+                <i class="fas fa-route text-white/40"></i>
+                <span class="font-bold text-sm">Trips</span>
+            </div>
+            <div onclick="showSection('fleet')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+                <i class="fas fa-bus text-white/40"></i>
+                <span class="font-bold text-sm">Fleet</span>
+            </div>
+            <div onclick="showSection('payments')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+                <i class="fas fa-wallet text-white/40"></i>
+                <span class="font-bold text-sm">Payments</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="lg:ml-64 space-y-10">
+        
+        <!-- SECTION: OVERVIEW -->
+        <div id="section-overview" class="admin-section space-y-10">
+            <header class="flex justify-between items-center">
+                <h1 class="text-3xl font-black tracking-tight italic">System <span class="text-indigo-400">Overview</span></h1>
+                <div class="glass px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-green-400 animate-pulse">Live Server Status</div>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Revenue Today</p>
+                    <h3 id="stat-revenue" class="text-3xl font-black text-white">UGX --</h3>
+                </div>
+                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Total Trips</p>
+                    <h3 id="stat-trips" class="text-3xl font-black text-white">--</h3>
+                </div>
+                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Active Fleet</p>
+                    <h3 id="stat-fleet" class="text-3xl font-black text-white">--</h3>
+                </div>
+                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Occupancy</p>
+                    <h3 id="stat-occupancy" class="text-3xl font-black text-indigo-400">--%</h3>
+                </div>
+            </div>
+
+            <!-- CHART AREA -->
+            <div class="glass p-8 rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden">
+                <h3 class="text-lg font-bold mb-8">Revenue Trends (Last 7 Days)</h3>
+                <canvas id="revenueChart" style="width:100%; height:300px;"></canvas>
+            </div>
+        </div>
+
+        <!-- SECTION: USERS -->
+        <div id="section-users" class="admin-section hidden space-y-6">
+            <h2 class="text-2xl font-black italic">User <span class="text-indigo-400">Database</span></h2>
+            <div class="glass rounded-3xl border border-white/5 overflow-hidden overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-white/5 border-b border-white/5">
+                        <tr>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Name</th>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Email</th>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Role</th>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body" class="divide-y divide-white/5">
+                        <!-- Users will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION: PAYMENTS -->
+        <div id="section-payments" class="admin-section hidden space-y-6">
+            <h2 class="text-2xl font-black italic text-emerald-400">Transaction Oversight</h2>
+            <div class="glass rounded-3xl border border-white/5 overflow-hidden overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-white/5 border-b border-white/5">
+                        <tr>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Transaction ID</th>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Amount</th>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Status</th>
+                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-table-body" class="divide-y divide-white/5">
+                        <!-- Payments will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // --- 1. NAVIGATION ---
+        function showSection(sectionId) {
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${sectionId}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.admin-nav-item').forEach(i => {
+                i.classList.remove('active');
+                i.querySelector('i').classList.replace('text-indigo-400', 'text-white/40');
+            });
+            
+            const activeItem = event.currentTarget;
+            activeItem.classList.add('active');
+            activeItem.querySelector('i').classList.replace('text-white/40', 'text-indigo-400');
+
+            // Trigger data load
+            if (sectionId === 'overview') loadStats();
+            if (sectionId === 'users') loadUsers();
+            if (sectionId === 'payments') loadPayments();
+        }
+
+        // --- 2. DATA LOADERS ---
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/AdminApi/stats');
+                const data = await res.json();
+                
+                document.getElementById('stat-revenue').innerText = `UGX ${data.totalRevenueToday.toLocaleString()}`;
+                document.getElementById('stat-trips').innerText = data.totalTripsToday;
+                document.getElementById('stat-fleet').innerText = data.activeVehicles;
+                document.getElementById('stat-occupancy').innerText = `${data.occupancyRate}%`;
+
+                renderChart(data.revenueTrend);
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/AdminApi/users');
+                const users = await res.json();
+                const body = document.getElementById('user-table-body');
+                
+                body.innerHTML = users.map(u => `
+                    <tr>
+                        <td class="p-6 text-sm font-bold text-white">${u.name}</td>
+                        <td class="p-6 text-sm text-white/60">${u.email}</td>
+                        <td class="p-6">
+                            <span class="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">${u.role}</span>
+                        </td>
+                        <td class="p-6">
+                            <button class="text-[10px] font-black text-indigo-400 hover:text-white transition-colors">EDIT</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadPayments() {
+            try {
+                const res = await fetch('/api/AdminApi/payments');
+                const payments = await res.json();
+                const body = document.getElementById('payment-table-body');
+                
+                body.innerHTML = payments.map(p => `
+                    <tr>
+                        <td class="p-6 text-sm font-mono text-indigo-400">${p.transactionId || 'PENDING'}</td>
+                        <td class="p-6 text-sm font-bold text-white">UGX ${p.amount.toLocaleString()}</td>
+                        <td class="p-6 text-[10px] font-black uppercase tracking-widest ${p.status === 'Success' ? 'text-green-400' : 'text-yellow-400'}">${p.status}</td>
+                        <td class="p-6 text-sm text-white/40">${new Date(p.initiatedAt).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        // --- 3. CHART LOGIC ---
+        let revChart = null;
+        function renderChart(trendData) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if (revChart) revChart.destroy();
+
+            revChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: trendData,
+                        borderColor: '#818cf8',
+                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#818cf8',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initial load
+        window.onload = loadStats;
+    </script>
+}

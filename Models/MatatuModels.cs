@@ -134,3 +134,22 @@ public class Message
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public bool IsRead { get; set; }
 }
+
+public class AdminLog
+{
+    public int Id { get; set; }
+    public string AdminId { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string Target { get; set; } = string.Empty;
+    public string Details { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+public class SystemSetting
+{
+    public int Id { get; set; }
+    public string Key { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+}
+
