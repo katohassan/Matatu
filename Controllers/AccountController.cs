@@ -80,6 +80,29 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    public async Task<IActionResult> GuestLogin()
+    {
+        var guestEmail = "guest@matatu.ug";
+        var user = await _userManager.FindByEmailAsync(guestEmail);
+        
+        if (user == null)
+        {
+            user = new User 
+            { 
+                UserName = guestEmail, 
+                Email = guestEmail, 
+                Name = "Guest Traveler", 
+                Role = Role.Passenger,
+                EmailConfirmed = true 
+            };
+            await _userManager.CreateAsync(user, "Guest@123");
+        }
+
+        await _signInManager.SignInAsync(user, isPersistent: false);
+        return RedirectToAction("Index", "Home");
+    }
+
+    [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
