@@ -1,1596 +1,325 @@
 @using Microsoft.AspNetCore.Identity
 @using MatatuMVC.Models
+@using Microsoft.EntityFrameworkCore
 @inject UserManager<User> UserManager
+@inject MatatuMVC.Data.MatatuContext context
 
 @{
     ViewData["Title"] = "Dashboard";
     var user = await UserManager.GetUserAsync(User);
 }
 
-@if (User.Identity?.IsAuthenticated != true)
-{
-    <div class="bg-indigo-600 text-white text-[10px] font-bold py-2 px-4 text-center tracking-[0.2em] uppercase mb-4 rounded-xl shadow-lg animate-pulse">
-        Guest Mode: Previewing System Dashboard. <a asp-controller="Account" asp-action="Login" class="underline ml-2">Sign in for full access</a>
-    </div>
-}
+<!-- GLOBAL NAVIGATION STYLES -->
+<style>
+    .tab-view { display: none; }
+    .tab-view.active { display: block; animation: fadeIn 0.3s ease-out; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .nav-item.active { color: #818cf8 !important; }
+    .nav-item.active svg { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.4)); }
+</style>
 
-<!-- Main Container -->
-<div id="view-Home" class="tab-view p-8 pb-32 min-h-screen relative transition-opacity duration-300">
-    <header class="flex justify-between items-center mb-16 border-b border-white/5 pb-8 pt-8">
-        <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl glass p-0.5 shadow-indigo-500/20">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@(user?.Name ?? "Guest")" alt="Profile" class="w-full h-full rounded-2xl object-cover" />
-            </div>
+<div class="relative w-full max-w-lg mx-auto bg-[#0f172a] min-h-screen shadow-2xl">
+
+    <!-- HOME VIEW -->
+    <div id="view-Home" class="tab-view active p-8 pb-32">
+        <header class="flex justify-between items-center mb-10 pt-4">
             <div>
-                <p class="label-mono mb-0.5">Welcome Back</p>
-                <h3 class="text-3xl font-bold tracking-tight text-white font-display">@(user?.Name ?? "Guest Traveler")</h3>
+                <h1 class="text-4xl font-bold tracking-tighter text-white font-display mb-1">MoveSafe <span class="text-indigo-400">UG</span></h1>
+                <p class="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Transit OS · Kampala</p>
             </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <button class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-white/70 hover:text-white transition-colors relative">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-                <div class="absolute top-3 right-3 w-2 h-2 bg-indigo-400 rounded-full border-2 border-slate-900 shadow-[0_0_10px_rgba(129,140,248,0.5)]"></div>
-            </button>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
-                    <button type="submit" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-red-400 hover:text-red-300 transition-colors">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                    </button>
-                </form>
-            }
-            else
-            {
-                <a asp-controller="Account" asp-action="Login" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-indigo-400 hover:text-white transition-colors">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="12" cy="7" r="4"/><path d="M9 21v-2a4 4 0 0 1 4-4"/></svg>
-                </a>
-            }
-        </div>
-    </header>
-
-    <div id="radarMap" class="w-full h-48 glass rounded-3xl mb-8 border border-white/5 overflow-hidden shadow-2xl relative">
-        <div id="map" class="w-full h-full grayscale-[0.6] invert-[0.9] opacity-80" style="min-height: 200px;"></div>
-        <div class="absolute top-4 left-4 z-[400] glass px-3 py-1.5 rounded-xl label-mono text-[8px] flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> LIVE RADAR
-        </div>
-    </div>
-
-    <div class="card-premium mb-12 relative group">
-        <div class="absolute -top-4 -right-4 py-2 px-6 glass rounded-2xl label-mono text-white/60">Transit Radar</div>
-        <div class="space-y-10 pt-4">
-            <div class="flex items-center gap-6 relative">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 z-10">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                </div>
-                <div><p class="label-mono mb-1">Departure</p><h4 class="font-bold text-2xl text-white tracking-tight">Old Taxi Park</h4></div>
-                <div class="absolute left-[19px] top-10 w-0.5 h-14 border-l-2 border-indigo-500/10 border-dashed"></div>
+            <div class="w-12 h-12 glass rounded-2xl p-0.5 border border-white/10 shadow-lg">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@(user?.Name ?? "Guest")" class="w-full h-full rounded-2xl object-cover" />
             </div>
-            
-            <div class="flex items-center gap-6 group hover:bg-white/5 p-2 -m-2 rounded-2xl transition-colors relative">
-                <div class="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 z-10 group-focus-within:bg-indigo-500/20 group-focus-within:border-indigo-500/30 transition-all">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white/40 rotate-[225deg] group-focus-within:text-indigo-400 transition-colors"><polyline points="15 18 9 12 15 6"/></svg>
-                </div>
-                <div class="flex-1">
-                    <p class="label-mono mb-1">Destination</p>
-                    <input id="destinationInput" type="text" placeholder="Search Hub..." class="bg-transparent font-bold text-2xl tracking-tight text-white placeholder-white/50 outline-none w-full border-none focus:ring-0 p-0 transition-all" />
-                </div>
-            </div>
-        </div>
-        
-        <div class="flex gap-4 mt-12">
-            <button class="flex-1 glass py-4 rounded-2xl label-mono flex items-center justify-center gap-2 hover:bg-white/10 transition-all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg> Today</button>
-            <button class="flex-1 glass py-4 rounded-2xl label-mono flex items-center justify-center gap-2 hover:bg-white/10 transition-all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 1 Person</button>
-        </div>
-        <button onclick="scanAvailability()" class="btn-primary mt-8 hover:scale-[1.02] active:scale-[0.98] transition-transform">SCAN HUB AVAILABILITY</button>
-        
-        <!-- Search Results (Hidden by default) -->
-        <div id="searchResults" class="hidden mt-8 space-y-4 opacity-0 transition-opacity duration-500">
-            <h4 class="label-mono text-white/30 text-[8px] uppercase tracking-[0.3em]">Live Departures</h4>
-            
-            <div class="glass p-4 rounded-2xl border-l-4 border-l-green-400 hover:bg-white/10 transition-colors cursor-pointer">
-                <div class="flex justify-between items-center mb-2">
-                    <h5 class="font-bold text-white">Kisaasi via Bukoto</h5>
-                    <span class="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-md">Departing Now</span>
-                </div>
-                <div class="flex justify-between items-center text-sm text-white/50">
-                    <span><i class="fas fa-chair mr-1"></i> 2 Seats Left</span>
-                    <span class="font-bold text-white">UGX 2,000</span>
-                </div>
-            </div>
-            
-            <div class="glass p-4 rounded-2xl border-l-4 border-l-yellow-400 hover:bg-white/10 transition-colors cursor-pointer">
-                <div class="flex justify-between items-center mb-2">
-                    <h5 class="font-bold text-white">Ntinda via Kira Rd</h5>
-                    <span class="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-md">In 5 mins</span>
-                </div>
-                <div class="flex justify-between items-center text-sm text-white/50">
-                    <span><i class="fas fa-chair mr-1"></i> 8 Seats Left</span>
-                    <span class="font-bold text-white">UGX 2,500</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-12">
-        <h4 class="label-mono text-white/30 text-[8px] mb-6 uppercase tracking-[0.3em]">Popular Transit Hubs</h4>
-        <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            <div onclick="setDestination('Old Taxi Park')" class="glass min-w-[200px] p-6 rounded-3xl border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer group shrink-0 active:scale-95">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                </div>
-                <h5 class="font-bold text-white mb-0.5">Old Taxi Park</h5>
-                <p class="label-mono text-[8px] text-white/20 uppercase tracking-widest">Central Zone</p>
-            </div>
-            <div onclick="setDestination('New Taxi Park')" class="glass min-w-[200px] p-6 rounded-3xl border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer group shrink-0 active:scale-95">
-                <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                </div>
-                <h5 class="font-bold text-white mb-0.5">New Taxi Park</h5>
-                <p class="label-mono text-[8px] text-white/20 uppercase tracking-widest">Central Zone</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-5 mb-8">
-        <div onclick="loadFavorites()" class="glass p-6 rounded-3xl cursor-pointer hover:bg-white/15 transition-all group active:scale-95">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-white/5 text-indigo-400 group-hover:bg-indigo-500/20">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            </div>
-            <h5 class="font-bold text-white mb-0.5">Favorites</h5>
-            <p class="text-[10px] font-medium text-white/30 uppercase tracking-wider">Frequent Stage</p>
-        </div>
-        <div onclick="loadWallet()" class="glass p-6 rounded-3xl cursor-pointer hover:bg-white/15 transition-all group active:scale-95">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-indigo-500 text-white shadow-lg shadow-indigo-500/40">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-            </div>
-            <h5 class="font-bold text-white mb-0.5">Wallet</h5>
-            <p class="text-[10px] font-medium text-white/30 uppercase tracking-wider">UGX 14,000</p>
-        </div>
-    </div>
-
-    <!-- Hidden Details Panels -->
-    <div id="favoritesDetails" class="hidden mb-14 space-y-3 opacity-0 transition-opacity duration-500">
-        <h4 class="label-mono text-white/30 text-[8px] uppercase tracking-[0.3em]">Saved Routes</h4>
-        <div class="glass p-4 rounded-2xl flex justify-between items-center hover:bg-white/10 transition-colors cursor-pointer" onclick="setDestination('Makerere Kikoni')">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-star text-yellow-400"></i>
-                <span class="font-bold">Makerere Kikoni</span>
-            </div>
-            <i class="fas fa-chevron-right text-white/30 text-xs"></i>
-        </div>
-        <div class="glass p-4 rounded-2xl flex justify-between items-center hover:bg-white/10 transition-colors cursor-pointer" onclick="setDestination('Ntinda')">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-star text-yellow-400"></i>
-                <span class="font-bold">Ntinda via Kisaasi</span>
-            </div>
-            <i class="fas fa-chevron-right text-white/30 text-xs"></i>
-        </div>
-    </div>
-
-    <div id="walletDetails" class="hidden mb-14 space-y-3 opacity-0 transition-opacity duration-500">
-        <h4 class="label-mono text-white/30 text-[8px] uppercase tracking-[0.3em]">Recent Transactions</h4>
-        <div class="glass p-4 rounded-2xl flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center"><i class="fas fa-arrow-down text-xs"></i></div>
-                <div>
-                    <span class="font-bold block text-sm">Trip to Kisaasi</span>
-                    <span class="text-[10px] text-white/40">Today, 08:30 AM</span>
-                </div>
-            </div>
-            <span class="font-bold text-red-400">-UGX 2,000</span>
-        </div>
-        <div class="glass p-4 rounded-2xl flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center"><i class="fas fa-arrow-up text-xs"></i></div>
-                <div>
-                    <span class="font-bold block text-sm">Mobile Money Top-up</span>
-                    <span class="text-[10px] text-white/40">Yesterday</span>
-                </div>
-            </div>
-            <span class="font-bold text-green-400">+UGX 10,000</span>
-        </div>
-        <button class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition-colors mt-2 text-sm shadow-lg shadow-indigo-500/20">TOP UP WALLET</button>
-    </div>
-</div>
-
-<!-- Inbox View -->
-<div id="view-Inbox" class="tab-view hidden p-8 pb-32 min-h-screen relative opacity-0 transition-opacity duration-300">
-    <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">Inbox</h3>
-    <div class="space-y-4">
-        <div class="glass p-5 rounded-3xl border-l-4 border-l-indigo-400">
-            <div class="flex justify-between items-start mb-2">
-                <h5 class="font-bold text-white">Trip Receipt: Kisaasi</h5>
-                <span class="text-xs text-white/40">2h ago</span>
-            </div>
-            <p class="text-sm text-white/60">Your trip has been completed successfully. UGX 2,000 was deducted.</p>
-        </div>
-        <div class="glass p-5 rounded-3xl">
-            <div class="flex justify-between items-start mb-2">
-                <h5 class="font-bold text-white">System Update</h5>
-                <span class="text-xs text-white/40">Yesterday</span>
-            </div>
-            <p class="text-sm text-white/60">We've added new routes around the Central Zone!</p>
-        </div>
-    </div>
-</div>
-
-<!-- Trips View -->
-<div id="view-Trips" class="tab-view hidden p-8 pb-32 min-h-screen relative opacity-0 transition-opacity duration-300">
-    <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">My Trips</h3>
-    <div id="tripsHistoryContainer" class="space-y-4">
-        <div class="glass p-6 rounded-3xl mb-4 flex justify-between items-center animate-pulse">
-            <div class="h-10 w-48 bg-white/5 rounded-lg"></div>
-        </div>
-    </div>
-</div>
-
-<!-- Profile View (Dynamic API Loaded) -->
-<div id="view-Profile" class="tab-view hidden p-8 pb-32 min-h-screen relative" style="background:#0f172a;z-index:5;">
-    <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">My Account</h3>
-    
-    <div id="profileContainer">
-        <!-- Spinner while loading -->
-        <div class="glass p-12 rounded-3xl text-center border border-white/5">
-            <i class="fas fa-circle-notch fa-spin text-indigo-400 text-3xl mb-4"></i>
-            <p class="text-white/40 text-sm">Loading your profile...</p>
-        </div>
-    </div>
-
-    <!-- Static Navigation Actions -->
-    <div class="mt-8 space-y-4">
-        <div class="glass p-5 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/5">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-cog"></i></div>
-                <span class="font-bold text-white/80">Account Preferences</span>
-            </div>
-            <i class="fas fa-chevron-right text-white/20 text-xs"></i>
-        </div>
-        
-        @if (User.Identity?.IsAuthenticated == true)
-        {
-            <form asp-controller="Account" asp-action="Logout" method="post" class="mt-8">
-                <button type="submit" class="w-full glass p-5 rounded-2xl flex justify-between items-center cursor-pointer text-red-400 hover:bg-red-500/10 transition-all border border-red-500/10">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-red-500/5 flex items-center justify-center"><i class="fas fa-sign-out-alt"></i></div>
-                        <span class="font-black uppercase tracking-widest text-xs">Sign Out</span>
-                    </div>
-                </button>
-            </form>
-        }
-    </div>
-</div>
-
-@if (User.IsInRole("Admin") || User.IsInRole("Owner"))
-{
-    <!-- Admin/Fleet View -->
-    <div id="view-Admin" class="tab-view hidden p-8 pb-32 min-h-screen relative opacity-0 transition-opacity duration-300">
-        <header class="mb-8 border-b border-white/5 pb-4 pt-8">
-            <h2 class="text-3xl font-display font-bold text-white tracking-tight italic">Fleet Control</h2>
-            <p class="text-white/40 mt-1 uppercase text-[10px] tracking-widest font-bold">Vehicle & Maintenance Log</p>
         </header>
 
-        <div id="fleetList" class="space-y-6">
-            <div class="glass p-8 rounded-3xl text-center">
-                <i class="fas fa-spinner fa-spin text-indigo-400 mb-4"></i>
-                <p class="text-white/40 text-sm">Synchronizing fleet data...</p>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Tickets/Conductor View -->
-<div id="view-Tickets" class="tab-view hidden opacity-0 transition-opacity duration-300 p-8 pb-32 min-h-screen relative">
-    <header class="mb-8 border-b border-white/5 pb-4">
-        <h2 class="text-3xl font-display font-bold text-white tracking-tight">Ticketing</h2>
-        <p class="text-white/40 mt-1">Conductor Dashboard</p>
-    </header>
-
-    <!-- State 1: Start Trip -->
-    <div id="ticket-start-trip" class="glass p-6 rounded-3xl border border-white/10 space-y-4">
-        <h3 class="text-lg font-bold text-white">Start New Trip</h3>
-        <div>
-            <label class="block text-xs text-white/50 mb-1">Select Route</label>
-            <select id="routeSelect" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500"></select>
-        </div>
-        <div>
-            <label class="block text-xs text-white/50 mb-1">Vehicle ID (Demo uses ID: 1)</label>
-            <input id="vehicleSelect" type="number" value="1" placeholder="Vehicle ID" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none" />
-        </div>
-        <button onclick="startConductorTrip()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-500/20">
-            Start Trip
-        </button>
-    </div>
-
-    <!-- State 2: Active Trip & Issue Ticket -->
-    <div id="ticket-active-trip" class="hidden space-y-6">
-        <!-- Live Capacity Card -->
-        <div class="glass p-6 rounded-3xl border border-indigo-500/30 bg-indigo-500/5 text-center">
-            <p class="text-indigo-300 text-xs font-bold tracking-widest uppercase mb-1">Live Capacity</p>
-            <div class="flex items-end justify-center gap-2">
-                <span id="livePassengerCount" class="text-5xl font-display font-black text-white">0</span>
-                <span id="liveCapacity" class="text-2xl text-white/40 mb-1">/ 14</span>
-            </div>
-            <p id="liveTripRoute" class="text-white/60 text-sm mt-2">Kampala → Kisaasi</p>
-        </div>
-
-        <!-- Issue Ticket Form -->
-        <div class="glass p-6 rounded-3xl border border-white/10 space-y-4 relative overflow-hidden">
-            <div id="fullOverlay" class="hidden absolute inset-0 bg-red-500/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                <i class="fas fa-ban text-4xl text-white mb-2"></i>
-                <h3 class="text-xl font-bold text-white">Vehicle is Full</h3>
-                <p class="text-white/80 text-sm">Cannot issue more tickets.</p>
-            </div>
-
-            <button onclick="openQRScanner()" class="w-full glass border border-green-500/30 bg-green-500/5 text-green-300 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mb-4">
-                <i class="fas fa-qrcode"></i> SCAN TICKET
-            </button>
-
-            <h3 class="text-lg font-bold text-white">Issue Ticket</h3>
-            <div>
-                <label class="block text-xs text-white/50 mb-1">Passenger Phone</label>
-                <input id="passengerPhone" type="tel" placeholder="e.g. 0771234567" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500" />
-            </div>
-            <div>
-                <label class="block text-xs text-white/50 mb-1">Payment Method</label>
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="selectPaymentMethod(0, this)" class="pay-btn border border-indigo-500 bg-indigo-500/20 text-indigo-300 rounded-lg py-2 text-xs font-bold">M-Pesa</button>
-                    <button onclick="selectPaymentMethod(1, this)" class="pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold">Airtel</button>
-                    <button onclick="selectPaymentMethod(2, this)" class="pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold">MTN</button>
-                    <button onclick="selectPaymentMethod(4, this)" class="pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold">Cash</button>
+        <div class="glass p-8 rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden mb-10">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+            <h2 class="text-2xl font-bold text-white mb-6 leading-tight">Welcome Back,<br/><span class="text-indigo-400">@(user?.Name?.Split(' ')[0] ?? "Traveler")</span></h2>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <p class="text-[9px] font-bold text-white/30 uppercase mb-1">Daily Trips</p>
+                    <p class="text-xl font-bold text-white">14 Active</p>
+                </div>
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <p class="text-[9px] font-bold text-white/30 uppercase mb-1">System Load</p>
+                    <p class="text-xl font-bold text-green-400">Optimal</p>
                 </div>
             </div>
-            <button id="issueBtn" onclick="issueTicket()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2">
-                Issue Ticket
-            </button>
         </div>
 
-        <button onclick="endConductorTrip()" class="w-full border border-red-500/30 text-red-400 font-bold py-3.5 rounded-xl hover:bg-red-500/10 transition-colors">
-            End Trip
-        </button>
+        <div class="space-y-4">
+            <h3 class="text-xs font-black text-white/20 uppercase tracking-[0.2em] mb-4">Quick Actions</h3>
+            <button onclick="switchTab('Map')" class="w-full glass p-5 rounded-2xl border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform"><i class="fas fa-map-marked-alt"></i></div>
+                    <span class="font-bold text-white">Find Matatu Near Me</span>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </button>
+            <button onclick="switchTab('Tickets')" class="w-full glass p-5 rounded-2xl border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-all">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform"><i class="fas fa-ticket-alt"></i></div>
+                    <span class="font-bold text-white">My Active Tickets</span>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </button>
+        </div>
     </div>
-</div>
 
-<!-- Map View -->
-<div id="view-Map" class="tab-view hidden opacity-0 transition-opacity duration-300" style="position:fixed;inset:0;bottom:72px;z-index:10;height:calc(100vh - 72px);background:#0f172a;">
-    <div id="matatuMap" style="width:100%;height:100%;"></div>
-    <!-- Map Header -->
-    <div style="position:absolute;top:0;left:0;right:0;z-index:20;background:linear-gradient(180deg,rgba(15,23,42,0.97) 70%,transparent);padding:20px 20px 32px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-                <p style="font-size:10px;letter-spacing:0.25em;color:rgba(255,255,255,0.35);text-transform:uppercase;font-weight:600;margin:0;">Live Navigation</p>
-                <h3 style="font-size:22px;font-weight:800;color:#fff;margin:4px 0 0;">Kampala Transit Map</h3>
+    <!-- INBOX VIEW -->
+    <div id="view-Inbox" class="tab-view p-8 pb-32">
+        <h2 class="text-3xl font-bold text-white mb-8 pt-8">Inbox</h2>
+        <div class="space-y-4">
+            <div class="glass p-5 rounded-2xl border-l-4 border-indigo-500">
+                <div class="flex justify-between items-start mb-2">
+                    <h5 class="font-bold text-white text-sm">Payment Confirmed</h5>
+                    <span class="text-[10px] text-white/40">2m ago</span>
+                </div>
+                <p class="text-xs text-white/50 leading-relaxed">Your UGX 2,500 payment for Trip #MS-992 was successful.</p>
             </div>
-            <button onclick="locateMe()" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:10px 14px;color:#818cf8;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-                My Location
-            </button>
-        </div>
-        <!-- Search bar -->
-        <div style="display:flex;gap:8px;">
-            <input id="mapSearch" type="text" placeholder="Search destination in Kampala..." 
-                style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px 16px;font-size:13px;color:#fff;outline:none;"
-                onkeydown="if(event.key==='Enter')searchOnMap()" />
-            <button onclick="searchOnMap()" style="background:#6366f1;border:none;border-radius:12px;padding:0 16px;cursor:pointer;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            </button>
-        </div>
-    </div>
-
-    <!-- Leaflet Map Container -->
-    <div id="matatuMap" style="position:absolute;inset:0;width:100%;height:100%;"></div>
-
-    <!-- Hub Quick Select Pills -->
-    <div style="position:absolute;bottom:16px;left:0;right:0;z-index:20;padding:0 16px;display:flex;gap:8px;overflow-x:auto;">
-        <button onclick="flyToHub('old')" style="background:rgba(15,23,42,0.9);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:8px 16px;color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;backdrop-filter:blur(8px);">
-            📍 Old Taxi Park
-        </button>
-        <button onclick="flyToHub('new')" style="background:rgba(15,23,42,0.9);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:8px 16px;color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;backdrop-filter:blur(8px);">
-            📍 New Taxi Park
-        </button>
-        <button onclick="flyToHub('wandegeya')" style="background:rgba(15,23,42,0.9);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:8px 16px;color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;backdrop-filter:blur(8px);">
-            📍 Wandegeya
-        </button>
-        <button onclick="flyToHub('kisaasi')" style="background:rgba(15,23,42,0.9);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:8px 16px;color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;backdrop-filter:blur(8px);">
-            📍 Kisaasi
-        </button>
-        <button onclick="flyToHub('ntinda')" style="background:rgba(15,23,42,0.9);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:8px 16px;color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;backdrop-filter:blur(8px);">
-            📍 Ntinda
-        </button>
-    </div>
-</div>
-
-<!-- Bottom Nav -->
-    <nav class="bottom-nav flex justify-around items-center bg-[#0f172a]/90 backdrop-blur-md border-t border-white/10 p-4 fixed bottom-0 left-0 w-full z-40">
-        <div id="tab-Home" onclick="switchTab('Home')" class="nav-item active flex flex-col items-center cursor-pointer text-indigo-400 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="mt-1 text-[10px] font-medium">Home</span></div>
-        <div id="tab-Inbox" onclick="switchTab('Inbox')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors relative"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="mt-1 text-[10px] font-medium">Inbox</span><span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span></div>
-        <div id="tab-Map" onclick="switchTab('Map')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg><span class="mt-1 text-[10px] font-medium">Map</span></div>
-        <div id="tab-Tickets" onclick="switchTab('Tickets')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5h-2M15 9h-2M15 13h-2M15 17h-2M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2M19 5h-2v14h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg><span class="mt-1 text-[10px] font-medium">Tickets</span></div>
-        <div id="tab-Trips" onclick="switchTab('Trips')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/><line x1="7" x2="7" y1="15" y2="15"/><line x1="12" x2="12" y1="15" y2="15"/><line x1="17" x2="17" y1="15" y2="15"/></svg><span class="mt-1 text-[10px] font-medium">Trips</span></div>
-        @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
-        {
-            <div id="tab-Admin" onclick="switchTab('Admin')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                <span class="mt-1 text-[10px] font-medium">Fleet</span>
+            <div class="glass p-5 rounded-2xl border-l-4 border-green-500">
+                <div class="flex justify-between items-start mb-2">
+                    <h5 class="font-bold text-white text-sm">Trip Starting</h5>
+                    <span class="text-[10px] text-white/40">15m ago</span>
+                </div>
+                <p class="text-xs text-white/50 leading-relaxed">Matatu UBL 402P has started the route to Old Taxi Park.</p>
             </div>
-        }
-        <div id="tab-Profile" onclick="switchTab('Profile')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="mt-1 text-[10px] font-medium">Profile</span></div>
+            <div class="glass p-5 rounded-2xl opacity-40">
+                <div class="flex justify-between items-start mb-2">
+                    <h5 class="font-bold text-white text-sm">System Update</h5>
+                    <span class="text-[10px] text-white/40">Yesterday</span>
+                </div>
+                <p class="text-xs text-white/50 leading-relaxed">New hub added: Ntinda Stage is now live!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP VIEW -->
+    <div id="view-Map" class="tab-view" style="position:fixed;inset:0;bottom:80px;z-index:10;background:#0f172a;">
+        <div id="matatuMap" style="width:100%;height:100%;"></div>
+        <div class="absolute top-8 left-6 right-6 z-[400]">
+            <div class="glass p-4 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-3 backdrop-blur-xl">
+                <i class="fas fa-search text-indigo-400"></i>
+                <input type="text" placeholder="Locate Hub or Vehicle..." class="bg-transparent border-none outline-none text-white text-sm w-full placeholder:text-white/20" />
+            </div>
+        </div>
+        <!-- Hub Pills -->
+        <div class="absolute bottom-6 left-0 right-0 z-[400] px-6 flex gap-2 overflow-x-auto no-scrollbar">
+            <button onclick="flyToHub('old')" class="glass px-4 py-2 rounded-full text-[10px] font-black text-white/70 whitespace-nowrap border border-white/5">OLD TAXI PARK</button>
+            <button onclick="flyToHub('new')" class="glass px-4 py-2 rounded-full text-[10px] font-black text-white/70 whitespace-nowrap border border-white/5">NEW TAXI PARK</button>
+            <button onclick="flyToHub('ntinda')" class="glass px-4 py-2 rounded-full text-[10px] font-black text-white/70 whitespace-nowrap border border-white/5">NTINDA</button>
+        </div>
+    </div>
+
+    <!-- TICKETS VIEW -->
+    <div id="view-Tickets" class="tab-view p-8 pb-32">
+        <h2 class="text-3xl font-bold text-white mb-8 pt-8 font-display italic">Tickets</h2>
+        <div class="space-y-5">
+            <div class="glass p-6 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-indigo-500/50 transition-all">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <p class="label-mono text-indigo-400 text-[9px] mb-1 tracking-[0.2em] uppercase font-bold">#MS-88102-KLA</p>
+                        <h4 class="font-bold text-xl text-white">Old Taxi Park → Kisaasi</h4>
+                    </div>
+                    <div class="bg-indigo-500/20 px-3 py-1 rounded-full text-[10px] font-black text-indigo-300">ACTIVE</div>
+                </div>
+                <div class="flex justify-between items-end border-t border-white/5 pt-4">
+                    <div>
+                        <p class="text-[9px] text-white/30 font-bold uppercase mb-1">Standard Fare</p>
+                        <p class="text-lg font-bold text-white tracking-tight">UGX 2,500</p>
+                    </div>
+                    <button class="bg-white/5 hover:bg-white/10 p-3 rounded-2xl transition-all"><i class="fas fa-qrcode text-white/60"></i></button>
+                </div>
+            </div>
+            
+            <div class="glass p-6 rounded-3xl border border-white/5 opacity-50">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <p class="label-mono text-white/30 text-[9px] mb-1 uppercase font-bold">#MS-77192-NTN</p>
+                        <h4 class="font-bold text-xl text-white">Wandegeya → Ntinda</h4>
+                    </div>
+                    <div class="bg-white/5 px-3 py-1 rounded-full text-[10px] font-black text-white/40">USED</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRIPS VIEW -->
+    <div id="view-Trips" class="tab-view p-8 pb-32">
+        <h2 class="text-3xl font-bold text-white mb-8 pt-8">Real-Time Trips</h2>
+        <div class="space-y-4">
+            <div class="glass p-6 rounded-3xl border border-white/5 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="flex items-center gap-2 text-green-400 text-[10px] font-black uppercase tracking-widest">
+                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> Boarding Now
+                    </span>
+                    <p class="text-white/20 text-[10px] font-bold uppercase">UBL 902X</p>
+                </div>
+                <h4 class="text-xl font-bold text-white mb-1">Kampala → Entebbe</h4>
+                <p class="text-white/40 text-xs mb-6">Departure: 10:45 AM · 4 Seats Remaining</p>
+                <button class="w-full btn-primary py-4 rounded-2xl text-[11px] font-black tracking-widest shadow-lg shadow-indigo-500/20">BOOK SEAT</button>
+            </div>
+
+            <div class="glass p-6 rounded-3xl border border-white/5">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-indigo-400 text-[10px] font-black uppercase tracking-widest">In 20 Mins</span>
+                    <p class="text-white/20 text-[10px] font-bold uppercase">UBH 112P</p>
+                </div>
+                <h4 class="text-xl font-bold text-white mb-1">Old Taxi Park → Namugongo</h4>
+                <p class="text-white/40 text-xs">Departure: 11:15 AM · 12 Seats Remaining</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="view-Profile" class="tab-view p-8 pb-32">
+        <h2 class="text-3xl font-bold text-white mb-8 pt-8">My Account</h2>
+        <div id="profileContainer">
+            <div class="glass p-10 rounded-[40px] text-center border border-white/10 shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl"></div>
+                <div class="w-32 h-32 rounded-full mx-auto mb-6 bg-indigo-500/20 p-1 border-4 border-indigo-500/30">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@(user?.Name ?? "Guest")" class="w-full h-full rounded-full bg-slate-800" />
+                </div>
+                <h4 class="font-bold text-3xl text-white mb-1">@(user?.Name ?? "Guest Traveler")</h4>
+                <p class="text-indigo-300/60 text-sm font-medium tracking-wide mb-6">@(user?.Email ?? "No account linked")</p>
+                
+                <div class="inline-block px-6 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                    @(user?.Role.ToString() ?? "Guest Access")
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-10 pt-8 border-t border-white/5">
+                    <div class="text-left">
+                        <p class="text-[9px] text-white/30 font-black uppercase tracking-widest mb-1">Join Date</p>
+                        <p class="text-sm font-bold text-white/80">May 2026</p>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-[9px] text-white/30 font-black uppercase tracking-widest mb-1">Status</p>
+                        <p class="text-sm font-bold text-green-400">Verified</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 space-y-4">
+             @if (User.Identity?.IsAuthenticated == true)
+             {
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="w-full glass p-5 rounded-2xl flex items-center justify-between group hover:bg-red-500/10 border border-red-500/5 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400"><i class="fas fa-sign-out-alt"></i></div>
+                            <span class="font-bold text-red-400">Sign Out</span>
+                        </div>
+                    </button>
+                </form>
+             }
+             else
+             {
+                 <a href="/Account/Login" class="w-full btn-primary py-5 text-center block rounded-2xl font-black tracking-[0.1em]">SIGN IN TO YOUR ACCOUNT</a>
+             }
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#0f172a]/80 backdrop-blur-2xl border-t border-white/5 p-4 z-50 flex justify-around items-center">
+        <div id="tab-Home" onclick="switchTab('Home')" class="nav-item active flex flex-col items-center cursor-pointer text-white/40 hover:text-indigo-400 transition-all">
+            <i class="fas fa-home text-xl mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Home</span>
+        </div>
+        <div id="tab-Inbox" onclick="switchTab('Inbox')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-indigo-400 transition-all">
+            <i class="fas fa-comment-alt text-xl mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Inbox</span>
+        </div>
+        <div id="tab-Map" onclick="switchTab('Map')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-indigo-400 transition-all">
+            <i class="fas fa-map-marked-alt text-xl mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Map</span>
+        </div>
+        <div id="tab-Tickets" onclick="switchTab('Tickets')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-indigo-400 transition-all">
+            <i class="fas fa-ticket-alt text-xl mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Tickets</span>
+        </div>
+        <div id="tab-Trips" onclick="switchTab('Trips')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-indigo-400 transition-all">
+            <i class="fas fa-route text-xl mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Trips</span>
+        </div>
+        <div id="tab-Profile" onclick="switchTab('Profile')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-indigo-400 transition-all">
+            <i class="fas fa-user text-xl mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Profile</span>
+        </div>
     </nav>
 </div>
 
-<!-- Floating Chat Button -->
-<button id="chatFab" onclick="toggleChat()" class="fixed bottom-24 right-5 z-50 w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-400 shadow-xl shadow-indigo-500/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95">
-    <svg id="chatIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <svg id="closeIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    <span id="chatBadge" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[9px] font-bold rounded-full hidden items-center justify-center"></span>
-</button>
-
-<!-- Chat Panel -->
-<div id="chatPanel" class="fixed bottom-40 right-4 w-[340px] max-w-[calc(100vw-2rem)] z-50 hidden opacity-0 translate-y-4 transition-all duration-300">
-    <div class="glass rounded-3xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden" style="height:500px;position:relative;">
-
-        <!-- CONTACT PICKER VIEW -->
-        <div id="contactPicker" style="position:absolute;inset:0;display:flex;flex-direction:column;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);flex-shrink:0;">
-                <span style="font-weight:700;color:#fff;font-size:15px;">New Message</span>
-                <button onclick="toggleChat()" style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;padding:4px;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div id="contactList" style="flex:1;overflow-y:auto;padding:12px;">
-                <p style="color:rgba(255,255,255,0.3);font-size:13px;text-align:center;padding-top:32px;">Loading contacts...</p>
-            </div>
-        </div>
-
-        <!-- CONVERSATION VIEW -->
-        <div id="conversationView" style="position:absolute;inset:0;display:none;flex-direction:column;">
-            <!-- HEADER — always visible with contact name -->
-            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#4338ca,#6366f1);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.12);">
-                <button onclick="backToContacts()" style="background:none;border:none;color:#fff;cursor:pointer;padding:4px;opacity:0.85;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-                <div style="position:relative;">
-                    <img id="chatAvatar" src="" style="width:40px;height:40px;border-radius:50%;background:#818cf8;border:2px solid rgba(255,255,255,0.3);display:block;" />
-                    <span style="position:absolute;bottom:0;right:0;width:11px;height:11px;background:#4ade80;border-radius:50%;border:2px solid #4338ca;"></span>
-                </div>
-                <div style="flex:1;min-width:0;">
-                    <div id="chatContactName" style="font-weight:800;color:#ffffff;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">--</div>
-                    <div id="chatContactRole" style="font-size:11px;color:#86efac;font-weight:600;margin-top:2px;">&#9679; Online</div>
-                </div>
-                <button onclick="toggleChat()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;padding:4px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <!-- MESSAGES -->
-            <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
-                <p style="color:rgba(255,255,255,0.3);font-size:12px;text-align:center;">Loading messages...</p>
-            </div>
-            <!-- INPUT -->
-            <div style="padding:12px;border-top:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);flex-shrink:0;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <input id="chatInput" type="text" placeholder="Type a message..." onkeydown="handleChatKey(event)"
-                        style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 14px;font-size:13px;color:#fff;outline:none;" />
-                    <button onclick="sendMessage()" style="width:40px;height:40px;border-radius:12px;background:#6366f1;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<!-- QR Scanner Modal -->
-<div id="qrModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6">
-    <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-xl" onclick="closeQRScanner()"></div>
-    <div class="glass w-full max-w-md p-8 rounded-4xl relative z-10 border border-white/10">
-        <div class="flex justify-between items-center mb-8">
-            <h3 class="text-2xl font-bold text-white font-display italic">Scanner</h3>
-            <button onclick="closeQRScanner()" class="w-10 h-10 rounded-xl glass flex items-center justify-center text-white/40 hover:text-white transition-colors">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div id="qr-reader" class="rounded-2xl overflow-hidden border border-white/5 bg-black/40 aspect-square"></div>
-        <p class="text-center text-white/40 text-[10px] uppercase font-bold tracking-[0.2em] mt-8">Align QR code within the frame</p>
-    </div>
-</div>
-
-<!-- Ticket Details Modal (For QR Result/History) -->
-<div id="ticketModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-6">
-    <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-xl" onclick="closeTicketModal()"></div>
-    <div class="glass w-full max-w-md p-8 rounded-4xl relative z-10 border border-white/10 text-center">
-        <div id="ticketQRCode" class="mx-auto bg-white p-4 rounded-3xl w-48 h-48 mb-8 shadow-2xl"></div>
-        <h3 id="modalTicketCode" class="text-3xl font-black text-white tracking-widest italic mb-2">TICKET-CODE</h3>
-        <p id="modalTicketRoute" class="text-indigo-300 font-bold uppercase text-xs tracking-widest mb-8">KLA → KIS</p>
-        
-        <div class="grid grid-cols-2 gap-4 mb-8">
-            <div class="glass p-4 rounded-2xl">
-                <p class="label-mono mb-1">Status</p>
-                <p id="modalTicketStatus" class="font-bold text-green-400">PAID</p>
-            </div>
-            <div class="glass p-4 rounded-2xl">
-                <p class="label-mono mb-1">Fare</p>
-                <p id="modalTicketFare" class="font-bold text-white">UGX 2,500</p>
-            </div>
-        </div>
-        
-        <div id="cancelTicketArea" class="mt-8 border-t border-white/5 pt-8">
-            <button id="cancelTicketBtn" onclick="cancelCurrentTicket()" class="text-red-400 text-[10px] font-bold uppercase tracking-widest hover:text-red-300 transition-colors">
-                Cancel Ticket & Request Refund
-            </button>
-        </div>
-        
-        <button onclick="closeTicketModal()" class="btn-primary mt-8">DISMISS</button>
-    </div>
-</div>
-
 @section Scripts {
+    <!-- LEAFLET JS & CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@@1.9.4/dist/leaflet.js"></script>
+
     <script>
-        // --- 1. CORE NAVIGATION (Must be defined first) ---
+        // --- 1. CORE NAVIGATION ---
         window.switchTab = function(tabName) {
-            console.log(">>> Navigating to:", tabName);
-            try {
-                const tabIds = ['Home', 'Inbox', 'Map', 'Tickets', 'Trips', 'Profile', 'Admin'];
-                
-                tabIds.forEach(id => {
-                    const t = document.getElementById(`tab-${id}`);
-                    const v = document.getElementById(`view-${id}`);
-                    if (t) { t.classList.remove('active', 'text-indigo-400'); t.classList.add('text-white/40'); }
-                    if (v) { v.style.display = 'none'; v.classList.add('hidden'); }
-                });
-
-                const activeView = document.getElementById(`view-${tabName}`);
-                const activeTab = document.getElementById(`tab-${tabName}`);
-
-                if (activeView) {
-                    activeView.style.display = 'block';
-                    activeView.classList.remove('hidden', 'opacity-0');
-                }
-                if (activeTab) {
-                    activeTab.classList.add('active', 'text-indigo-400');
-                    activeTab.classList.remove('text-white/40');
-                }
-
-                // Trigger loaders
-                if (tabName === 'Trips' && typeof fetchTripHistory === 'function') fetchTripHistory();
-                if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
-                if (tabName === 'Map' && typeof initMap === 'function') setTimeout(initMap, 100);
-                if (tabName === 'Tickets' && typeof initTicketingView === 'function') initTicketingView();
-                if (tabName === 'Profile') fetchProfile();
-            } catch (e) { console.error("Nav Error:", e); }
-        };
-
-        async function fetchProfile() {
-            const container = document.getElementById('profileContainer');
-            // Use local cache as fallback to prevent blank screen
-            const localUser = {
-                name: "@(user?.Name ?? "Guest Traveler")",
-                email: "@(user?.Email ?? "")",
-                role: "@(user?.Role.ToString() ?? "Guest")"
-            };
-
-            try {
-                const res = await fetch('/api/AccountApi/profile');
-                if (res.status === 401) {
-                    // Show guest mode if unauthorized
-                    renderGuestView(container);
-                    return;
-                }
-
-                if (!res.ok) throw new Error('API Error');
-                const data = await res.json();
-                renderProfileData(container, data);
-            } catch (err) {
-                console.warn("Profile API failed, using fallback:", err);
-                if (localUser.name !== "Guest Traveler") {
-                    renderProfileData(container, { ...localUser, phoneNumber: "N/A", joinedDate: "May 2026" });
-                } else {
-                    renderGuestView(container);
-                }
-            }
-        }
-
-        function renderProfileData(container, data) {
-            container.innerHTML = `
-                <div class="glass p-8 rounded-3xl mb-8 text-center border border-white/10 shadow-2xl">
-                    <div class="w-28 h-28 rounded-full mx-auto mb-6 bg-indigo-500/20 p-1 border-2 border-indigo-500/30">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name}" class="w-full h-full rounded-full bg-slate-800" />
-                    </div>
-                    <h4 class="font-bold text-2xl text-white mb-1">${data.name}</h4>
-                    <p class="text-indigo-300/60 text-sm font-medium tracking-wide mb-4">${data.email}</p>
-                    
-                    <div class="flex flex-wrap justify-center gap-2 mb-6">
-                        <span class="px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">${data.role}</span>
-                        <span class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest">Joined ${data.joinedDate}</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 border-t border-white/5 pt-6">
-                        <div class="text-left">
-                            <p class="text-[9px] text-white/30 font-bold uppercase mb-1">Phone Number</p>
-                            <p class="text-sm font-bold text-white/80">${data.phoneNumber}</p>
-                        </div>
-                        <div class="text-left">
-                            <p class="text-[9px] text-white/30 font-bold uppercase mb-1">Status</p>
-                            <p class="text-sm font-bold text-green-400"><i class="fas fa-check-circle mr-1"></i> Active</p>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-        function renderGuestView(container) {
-            container.innerHTML = `
-                <div class="glass p-10 rounded-3xl text-center border border-white/5 shadow-xl">
-                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-user-lock text-indigo-400 text-2xl"></i>
-                    </div>
-                    <h4 class="text-xl font-bold text-white mb-2">Guest Mode</h4>
-                    <p class="text-white/40 text-sm mb-8 leading-relaxed">Please sign in to view your profile.</p>
-                    <a href="/Account/Login" class="btn-primary inline-block !w-auto px-10">SIGN IN</a>
-                </div>`;
-        }
-
-        const isAuthenticated = @(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false");
-
-        function checkAuth() {
-            if (!isAuthenticated) {
-                showToast('Authentication Required. Please sign in to perform this action.', 'info');
-                setTimeout(() => {
-                    window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
-                }, 1500);
-                return false;
-            }
-            return true;
-        }
-
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            const colorClass = type === 'success' ? 'bg-indigo-500 shadow-indigo-500/30' : 'bg-slate-800 shadow-slate-900/50';
-            toast.className = `fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3.5 rounded-2xl ${colorClass} text-white font-medium text-sm shadow-xl z-50 flex items-center gap-3 transition-all duration-[400ms] ease-out transform -translate-y-16 opacity-0 border border-white/10`;
+            console.log("Switching to:", tabName);
             
-            toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'circle-notch fa-spin text-indigo-400'}"></i>
-                <span class="tracking-wide">${message}</span>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // Animate in
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    toast.classList.remove('-translate-y-16', 'opacity-0');
-                    toast.classList.add('translate-y-0', 'opacity-100');
-                }, 10);
+            // Hide all views
+            document.querySelectorAll('.tab-view').forEach(view => {
+                view.classList.remove('active');
             });
             
-            // Animate out
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('-translate-y-16', 'opacity-0');
-                setTimeout(() => toast.remove(), 400);
-            }, 2500);
-        }
-
-        function scanAvailability() {
-            showToast('Scanning live matatu availability...', 'success');
+            // Deactivate all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
             
-            const resultsDiv = document.getElementById('searchResults');
+            // Show selected view
+            const selectedView = document.getElementById(`view-${tabName}`);
+            if (selectedView) selectedView.classList.add('active');
             
-            // Simulate network delay then show results
-            setTimeout(() => {
-                resultsDiv.classList.remove('hidden');
-                // Tiny delay to allow display block to apply before opacity transition
-                requestAnimationFrame(() => {
-                    resultsDiv.classList.remove('opacity-0');
-                });
-                
-                showToast('Found 2 available matatus!', 'success');
-            }, 1500);
-        }
+            // Activate selected nav item
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            if (selectedTab) selectedTab.classList.add('active');
 
-        function setDestination(hubName) {
-            const input = document.getElementById('destinationInput');
-            input.value = hubName;
-            
-            // Add a little pulse animation to the input
-            input.classList.add('text-indigo-400');
-            setTimeout(() => {
-                input.classList.remove('text-indigo-400');
-            }, 300);
-
-            showToast(`Destination set to ${hubName}`, 'success');
-        }
-
-        function hideAllPanels() {
-            const favs = document.getElementById('favoritesDetails');
-            const wallet = document.getElementById('walletDetails');
-            favs.classList.add('hidden', 'opacity-0');
-            wallet.classList.add('hidden', 'opacity-0');
-        }
-
-        function loadFavorites() {
-            showToast('Loading your favorite routes...', 'info');
-            hideAllPanels();
-            const panel = document.getElementById('favoritesDetails');
-            setTimeout(() => {
-                panel.classList.remove('hidden');
-                requestAnimationFrame(() => panel.classList.remove('opacity-0'));
-            }, 600);
-        }
-
-        function loadWallet() {
-            showToast('Accessing Wallet...', 'info');
-            hideAllPanels();
-            const panel = document.getElementById('walletDetails');
-            setTimeout(() => {
-                panel.classList.remove('hidden');
-                requestAnimationFrame(() => panel.classList.remove('opacity-0'));
-            }, 600);
-        }
-
-        // --- Admin/Fleet Logic ---
-        async function fetchFleet() {
-            try {
-                const res = await fetch('/api/management/vehicles');
-                const vehicles = await res.json();
-                const container = document.getElementById('fleetList');
-                
-                container.innerHTML = vehicles.map(v => `
-                    <div class="glass p-6 rounded-3xl border border-white/5 space-y-4">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="font-bold text-white text-xl">${v.plateNumber}</h4>
-                                <p class="text-white/30 text-[10px] uppercase font-bold tracking-widest">${v.model || 'Standard Matatu'}</p>
-                            </div>
-                            <span class="text-[10px] font-bold px-3 py-1 rounded-full ${v.isActive ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'}">${v.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-white/5 p-3 rounded-2xl">
-                                <p class="text-[8px] text-white/30 uppercase font-bold mb-1">Odometer</p>
-                                <p class="text-white font-bold">${v.currentOdometer?.toLocaleString() || 0} KM</p>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded-2xl">
-                                <p class="text-[8px] text-white/30 uppercase font-bold mb-1">Next Service</p>
-                                <p class="text-white font-bold">${v.nextServiceDue ? new Date(v.nextServiceDue).toLocaleDateString() : 'Not Set'}</p>
-                            </div>
-                        </div>
-
-                        <button onclick="openMaintenanceModal(${v.id}, '${v.plateNumber}')" class="w-full glass border border-indigo-500/30 text-indigo-300 py-3 rounded-xl text-xs font-bold hover:bg-indigo-500/10 transition-all">
-                            UPDATE LOGS
-                        </button>
-                    </div>
-                `).join('');
-            } catch (e) { console.error(e); }
-        }
-
-        let currentMaintenanceVehicleId = null;
-        function openMaintenanceModal(id, plate) {
-            currentMaintenanceVehicleId = id;
-            showToast(`Updating logs for ${plate}`, 'info');
-            // For simplicity in this demo, we'll just prompt. A real modal would be better.
-            const odo = prompt("Enter current Odometer (KM):");
-            if (odo) updateMaintenance(id, parseInt(odo));
-        }
-
-        async function updateMaintenance(id, odometer) {
-            try {
-                const res = await fetch(`/api/management/vehicles/${id}/maintenance`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        serviceDate: new Date().toISOString(), 
-                        nextDue: new Date(Date.now() + 30*24*60*60*1000).toISOString(), // 30 days later
-                        odometer 
-                    })
-                });
-                if (res.ok) {
-                    showToast('Maintenance log updated!', 'success');
-                    fetchFleet();
-                }
-            } catch (e) { showToast('Update failed', 'error'); }
-        }
-
-        // --- GPS & Map Logic ---
-        let mainMap = null;
-        let matatuMap = null; // Large Map
-        let vehicleMarkers = {};
-        let vehicleMarkersLarge = {};
-        let locationSharingInterval = null;
-
-        function initMap() {
-            // 1. Initialize Home Radar Map
-            if (!mainMap && document.getElementById('map')) {
-                mainMap = L.map('map', { 
-                    zoomControl: false,
-                    attributionControl: false 
-                }).setView([0.3476, 32.5825], 13);
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mainMap);
+            // Specialized Init
+            if (tabName === 'Map') {
+                setTimeout(initMap, 100);
             }
+        };
 
-            // 2. Initialize Large Map View
-            if (!matatuMap && document.getElementById('matatuMap')) {
-                matatuMap = L.map('matatuMap', { 
+        // --- 2. MAP LOGIC ---
+        let leafletMap = null;
+        function initMap() {
+            if (!leafletMap && document.getElementById('matatuMap')) {
+                leafletMap = L.map('matatuMap', { 
                     zoomControl: false,
                     attributionControl: false 
                 }).setView([0.3476, 32.5825], 14);
 
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(matatuMap);
-            }
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(leafletMap);
 
-            // Invalidate size in case containers were hidden
-            if (mainMap) mainMap.invalidateSize();
-            if (matatuMap) matatuMap.invalidateSize();
-
-            // Start Radar Polling if not already started
-            if (!window.radarStarted) {
-                setInterval(pollActiveVehicles, 10000);
-                pollActiveVehicles();
-                window.radarStarted = true;
-            }
-        }
-
-        async function pollActiveVehicles() {
-            try {
-                const res = await fetch('/api/ticketing/trips/active');
-                const trips = await res.json();
-                
-                // Cleanup old markers
-                const currentIds = trips.map(t => t.id);
-                [vehicleMarkers, vehicleMarkersLarge].forEach(markerObj => {
-                    Object.keys(markerObj).forEach(id => {
-                        if (!currentIds.includes(parseInt(id))) {
-                            if (mainMap && markerObj === vehicleMarkers) mainMap.removeLayer(markerObj[id]);
-                            if (matatuMap && markerObj === vehicleMarkersLarge) matatuMap.removeLayer(markerObj[id]);
-                            delete markerObj[id];
-                        }
-                    });
+                // Add Demo Markers
+                const taxiIcon = L.divIcon({
+                    className: 'taxi-marker',
+                    html: '<div style="background:#818cf8;width:12px;height:12px;border:2px solid white;border-radius:50%;box-shadow:0 0 10px rgba(129,140,248,0.8);"></div>'
                 });
 
-                trips.forEach(t => {
-                    const lat = t.lat || (0.3476 + (Math.random() - 0.5) * 0.01);
-                    const lng = t.lng || (32.5825 + (Math.random() - 0.5) * 0.01);
-
-                    const iconHtml = `<div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center border-2 border-white shadow-lg shadow-indigo-500/50">
-                                        <i class="fas fa-bus text-white text-xs"></i>
-                                      </div>`;
-                    
-                    const matatuIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml, iconSize: [32, 32], iconAnchor: [16, 16] });
-
-                    // Update Home Map
-                    if (mainMap) {
-                        if (vehicleMarkers[t.id]) {
-                            vehicleMarkers[t.id].setLatLng([lat, lng]);
-                        } else {
-                            vehicleMarkers[t.id] = L.marker([lat, lng], { icon: matatuIcon }).addTo(mainMap);
-                        }
-                    }
-
-                    // Update Large Map
-                    if (matatuMap) {
-                        if (vehicleMarkersLarge[t.id]) {
-                            vehicleMarkersLarge[t.id].setLatLng([lat, lng]);
-                        } else {
-                            vehicleMarkersLarge[t.id] = L.marker([lat, lng], { icon: matatuIcon })
-                                .addTo(matatuMap)
-                                .bindPopup(`<div class="text-slate-900 font-bold p-1">${t.route}<br/><span class="text-[10px] text-slate-500">${t.vehicle}</span></div>`);
-                        }
-                    }
-                });
-            } catch (e) { console.error('Radar failed', e); }
-        }
-
-        function startLocationSharing(tripId) {
-            if (locationSharingInterval) clearInterval(locationSharingInterval);
-            
-            locationSharingInterval = setInterval(() => {
-                if ("geolocation" in navigator) {
-                    navigator.geolocation.getCurrentPosition(async (pos) => {
-                        const { latitude, longitude } = pos.coords;
-                        try {
-                            await fetch(`/api/ticketing/trips/${tripId}/location`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ lat: latitude, lng: longitude })
-                            });
-                        } catch (e) {}
-                    });
-                }
-            }, 10000);
-        }
-
-        function stopLocationSharing() {
-            if (locationSharingInterval) clearInterval(locationSharingInterval);
-        }
-
-        // --- QR Scanner & History Logic ---
-        let html5QrCode = null;
-
-        async function fetchTripHistory() {
-            if (!isAuthenticated) {
-                document.getElementById('tripsHistoryContainer').innerHTML = `
-                    <div class="glass p-8 rounded-3xl text-center">
-                        <p class="text-white/40 text-sm mb-6">Sign in to view your personalized trip history and tickets.</p>
-                        <a href="/Account/Login" class="btn-primary inline-block !w-auto px-10">SIGN IN</a>
-                    </div>`;
-                return;
+                L.marker([0.3136, 32.5756], {icon: taxiIcon}).addTo(leafletMap).bindPopup('<b>Old Taxi Park</b><br/>Central Kampala Hub');
+                L.marker([0.3166, 32.5746], {icon: taxiIcon}).addTo(leafletMap).bindPopup('<b>New Taxi Park</b>');
+                L.marker([0.3556, 32.5925], {icon: taxiIcon}).addTo(leafletMap).bindPopup('<b>Ntinda Stage</b>');
             }
-
-            try {
-                const res = await fetch('/api/ticketing/history');
-                const history = await res.json();
-                const container = document.getElementById('tripsHistoryContainer');
-                
-                if (!history || history.length === 0) {
-                    container.innerHTML = `
-                        <div class="glass p-8 rounded-3xl text-center">
-                            <i class="fas fa-route text-4xl text-white/10 mb-4"></i>
-                            <p class="text-white/40 text-sm">No trips recorded yet. Start your journey today!</p>
-                        </div>`;
-                    return;
-                }
-
-                container.innerHTML = history.map(t => {
-                    const ticketData = JSON.stringify(t).replace(/"/g, '&quot;');
-                    return `
-                    <div class="glass p-6 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer group" onclick="showTicketDetails(${ticketData})">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <p class="label-mono text-indigo-400 mb-1">${new Date(t.issuedAt).toLocaleDateString()}</p>
-                                <h4 class="font-bold text-white text-lg">${t.route}</h4>
-                            </div>
-                            <span class="text-[10px] font-bold px-3 py-1 rounded-full ${t.status === 'Boarded' ? 'bg-green-400/10 text-green-400' : 'bg-indigo-400/10 text-indigo-400'}">${t.status}</span>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <div class="flex gap-4">
-                                <div class="text-white/30 text-[10px] uppercase font-bold"><i class="fas fa-bus mr-1"></i> ${t.vehicle}</div>
-                                <div class="text-white/30 text-[10px] uppercase font-bold"><i class="fas fa-hashtag mr-1"></i> ${t.ticketCode}</div>
-                            </div>
-                            <p class="font-bold text-white">UGX ${t.amount.toLocaleString()}</p>
-                        </div>
-                    </div>`;
-                }).join('');
-            } catch (e) { 
-                console.error(e);
-                document.getElementById('tripsHistoryContainer').innerHTML = '<p class="text-white/30 text-center">Error loading history</p>';
-            }
+            if (leafletMap) leafletMap.invalidateSize();
         }
 
-        async function fetchFleet() {
-            const list = document.getElementById('fleetList');
-            if (!list) return;
-
-            try {
-                const res = await fetch('/api/management/fleet');
-                const fleet = await res.json();
-                
-                if (!fleet.length) {
-                    list.innerHTML = '<div class="glass p-8 rounded-3xl text-center text-white/40">No vehicles in fleet.</div>';
-                    return;
-                }
-
-                list.innerHTML = fleet.map(v => `
-                    <div class="glass p-6 rounded-3xl border border-white/10 hover:border-indigo-500/30 transition-all">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-                                    <i class="fas fa-bus text-indigo-400"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-xl text-white tracking-tight">${v.plateNumber}</h4>
-                                    <p class="label-mono text-[10px] text-white/40">${v.model}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="label-mono text-[10px] text-white/40 mb-1">TOTAL REVENUE</p>
-                                <p class="font-bold text-lg text-emerald-400">UGX ${v.totalRevenue.toLocaleString()}</p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-3 mb-6">
-                            <div class="bg-white/5 p-3 rounded-2xl">
-                                <p class="text-[9px] text-white/30 font-bold mb-1 uppercase tracking-wider">Owner (70%)</p>
-                                <p class="font-bold text-sm">UGX ${v.ownerShare.toLocaleString()}</p>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded-2xl">
-                                <p class="text-[9px] text-white/30 font-bold mb-1 uppercase tracking-wider">Sacco (20%)</p>
-                                <p class="font-bold text-sm">UGX ${v.saccoShare.toLocaleString()}</p>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded-2xl">
-                                <p class="text-[9px] text-white/30 font-bold mb-1 uppercase tracking-wider">System (10%)</p>
-                                <p class="font-bold text-sm">UGX ${v.systemShare.toLocaleString()}</p>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-white/5 pt-6 space-y-4">
-                            <div class="flex justify-between items-center">
-                                <p class="text-xs text-white/40">Current Odometer</p>
-                                <input type="number" id="odo-${v.id}" value="${v.odometer}" class="w-24 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-right text-xs" />
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <p class="text-xs text-white/40">Last Service</p>
-                                <input type="date" id="date-${v.id}" value="${v.lastServiceDate ? v.lastServiceDate.split('T')[0] : ''}" class="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs" />
-                            </div>
-                            <button onclick="updateMaintenance(${v.id})" class="w-full text-indigo-400 text-[10px] font-bold uppercase tracking-widest hover:text-indigo-300 transition-colors">
-                                SAVE LOGS
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (err) {
-                list.innerHTML = '<p class="text-red-400 text-sm text-center">Failed to load fleet data</p>';
-            }
+        function flyToHub(hub) {
+            if (!leafletMap) return;
+            const hubs = {
+                'old': [0.3136, 32.5756],
+                'new': [0.3166, 32.5746],
+                'ntinda': [0.3556, 32.5925]
+            };
+            leafletMap.flyTo(hubs[hub], 16);
         }
 
-        async function updateMaintenance(id) {
-            const odo = document.getElementById(`odo-${id}`).value;
-            const date = document.getElementById(`date-${id}`).value;
-            
-            try {
-                const res = await fetch(`/api/management/maintenance/${id}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ odometer: parseInt(odo), serviceDate: date })
-                });
-                if (res.ok) showToast('Maintenance log updated!', 'success');
-                else showToast('Update failed', 'error');
-            } catch { showToast('Network error', 'error'); }
-        }
-
-        let currentTicketId = null;
-        function showTicketDetails(ticket) {
-            currentTicketId = ticket.id;
-            document.getElementById('modalTicketCode').innerText = ticket.ticketCode;
-            document.getElementById('modalTicketRoute').innerText = ticket.route;
-            document.getElementById('modalTicketStatus').innerText = ticket.status.toUpperCase();
-            document.getElementById('modalTicketFare').innerText = 'UGX ' + ticket.amount.toLocaleString();
-            
-            // Hide cancel button if already boarded or cancelled
-            const cancelArea = document.getElementById('cancelTicketArea');
-            if (ticket.status === 'Paid') {
-                cancelArea.classList.remove('hidden');
-            } else {
-                cancelArea.classList.add('hidden');
-            }
-
-            // Generate QR Code ... (rest of function)
-            document.getElementById('ticketQRCode').innerHTML = "";
-            new QRCode(document.getElementById('ticketQRCode'), {
-                text: ticket.ticketCode,
-                width: 160,
-                height: 160,
-                colorDark: "#0f172a",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            document.getElementById('ticketModal').classList.remove('hidden');
-        }
-
-        async function cancelCurrentTicket() {
-            if (!currentTicketId) return;
-            const reason = prompt("Please enter reason for cancellation:");
-            if (!reason) return;
-
-            const btn = document.getElementById('cancelTicketBtn');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Refund...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`/api/ticketing/tickets/${currentTicketId}/cancel`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reason: reason })
-                });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    showToast(data.message, 'success');
-                    closeTicketModal();
-                    fetchTripHistory();
-                } else {
-                    showToast(data.error || 'Cancellation failed', 'error');
-                }
-            } catch (e) {
-                showToast('Network error', 'error');
-            } finally {
-                btn.innerHTML = 'Cancel Ticket & Request Refund';
-                btn.disabled = false;
-            }
-        }
-
-        function closeTicketModal() {
-            document.getElementById('ticketModal').classList.add('hidden');
-        }
-
-        function openQRScanner() {
-            if (!checkAuth()) return;
-            document.getElementById('qrModal').classList.remove('hidden');
-            html5QrCode = new Html5Qrcode("qr-reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-        }
-
-        async function onScanSuccess(decodedText) {
-            closeQRScanner();
-            showToast('Ticket Found: ' + decodedText, 'info');
-            
-            try {
-                const res = await fetch('/api/ticketing/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticketCode: decodedText })
-                });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    showToast(data.message, 'success');
-                    if (currentTripId) {
-                        fetchActiveTripSummary(currentTripId);
-                    }
-                } else {
-                    showToast(data.error || 'Invalid Ticket', 'error');
-                }
-            } catch (e) { 
-                showToast('Verification failed', 'error');
-            }
-        }
-
-        function closeQRScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('qrModal').classList.add('hidden');
-                }).catch(err => {
-                    document.getElementById('qrModal').classList.add('hidden');
-                });
-            } else {
-                document.getElementById('qrModal').classList.add('hidden');
-            }
-        }
-
-        async function fetchActiveTripSummary(id) {
-            try {
-                const res = await fetch(`/api/ticketing/trips/${id}/summary`);
-                const data = await res.json();
-                updateLiveCapacity(data.passengerCount, data.capacity, data.route);
-            } catch (e) {}
-        }
-
-        // switchTab moved to top for priority loading
-
-        let chatOpen = false;
-        let activeContactId = null;
-        let pollInterval = null;
-
-        function toggleChat() {
-            chatOpen = !chatOpen;
-            const panel = document.getElementById('chatPanel');
-            const chatIcon = document.getElementById('chatIcon');
-            const closeIcon = document.getElementById('closeIcon');
-
-            if (chatOpen) {
-                panel.classList.remove('hidden');
-                requestAnimationFrame(() => panel.classList.remove('opacity-0', 'translate-y-4'));
-                chatIcon.classList.add('hidden');
-                closeIcon.classList.remove('hidden');
-                loadContacts();
-            } else {
-                panel.classList.add('opacity-0', 'translate-y-4');
-                chatIcon.classList.remove('hidden');
-                closeIcon.classList.add('hidden');
-                clearInterval(pollInterval);
-                setTimeout(() => panel.classList.add('hidden'), 300);
-            }
-        }
-
-        async function loadContacts() {
-            const list = document.getElementById('contactList');
-            list.innerHTML = '<p class="text-white/40 text-sm text-center pt-8">Loading contacts...</p>';
-            try {
-                const res = await fetch('/api/messages/contacts');
-                const contacts = await res.json();
-                if (!contacts.length) {
-                    list.innerHTML = '<p class="text-white/40 text-sm text-center pt-8">No contacts found.</p>';
-                    return;
-                }
-                list.innerHTML = '';
-                contacts.forEach(c => {
-                    const el = document.createElement('div');
-                    el.className = 'flex items-center gap-3 p-3 rounded-2xl hover:bg-white/10 cursor-pointer transition-colors';
-                    el.onclick = () => openConversation(c);
-                    el.innerHTML = `
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${c.id}" class="w-10 h-10 rounded-full bg-indigo-500/20 shrink-0" />
-                        <div>
-                            <p class="font-bold text-white text-sm">${c.name}</p>
-                            <p class="text-[10px] text-white/40">${c.role === 1 ? '🚐 Driver' : '👤 Passenger'}</p>
-                        </div>`;
-                    list.appendChild(el);
-                });
-            } catch {
-                list.innerHTML = '<p class="text-red-400 text-sm text-center pt-8">Could not load contacts.</p>';
-            }
-        }
-
-        function openConversation(contact) {
-            activeContactId = contact.id;
-            document.getElementById('contactPicker').style.display = 'none';
-            const conv = document.getElementById('conversationView');
-            conv.style.display = 'flex';
-            document.getElementById('chatContactName').textContent = contact.name;
-            document.getElementById('chatContactRole').textContent = (contact.role === 1 ? '🚐 Driver' : '👤 Passenger') + ' · Online';
-            document.getElementById('chatAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${contact.id}`;
-            document.getElementById('chatInput').placeholder = `Message ${contact.name}...`;
-            loadMessages();
-            clearInterval(pollInterval);
-            pollInterval = setInterval(loadMessages, 4000);
-        }
-
-        function backToContacts() {
-            activeContactId = null;
-            clearInterval(pollInterval);
-            document.getElementById('conversationView').style.display = 'none';
-            document.getElementById('contactPicker').style.display = 'flex';
-        }
-
-        async function loadMessages() {
-            if (!activeContactId) return;
-            const msgs = document.getElementById('chatMessages');
-            const atBottom = msgs.scrollHeight - msgs.scrollTop <= msgs.clientHeight + 40;
-            try {
-                const res = await fetch(`/api/messages/${activeContactId}`);
-                const data = await res.json();
-                msgs.innerHTML = '';
-                if (!data.length) {
-                    msgs.innerHTML = '<p class="text-white/30 text-xs text-center pt-8">No messages yet. Say hello!</p>';
-                    return;
-                }
-                data.forEach(m => {
-                    const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const bubble = document.createElement('div');
-                    if (m.isMine) {
-                        bubble.className = 'flex items-end gap-2 justify-end';
-                        bubble.innerHTML = `<div class="bg-indigo-500 rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[75%]"><p class="text-sm text-white">${m.text}</p><p class="text-[9px] text-indigo-200/60 mt-1">${time}</p></div>`;
-                    } else {
-                        bubble.className = 'flex items-end gap-2';
-                        bubble.innerHTML = `<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${activeContactId}" class="w-7 h-7 rounded-full bg-indigo-500/20 shrink-0" /><div class="bg-white/10 rounded-2xl rounded-bl-sm px-4 py-2.5 max-w-[75%]"><p class="text-sm text-white">${m.text}</p><p class="text-[9px] text-white/30 mt-1">${time}</p></div>`;
-                    }
-                    msgs.appendChild(bubble);
-                });
-                if (atBottom) msgs.scrollTop = msgs.scrollHeight;
-            } catch {}
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text || !activeContactId) return;
-            input.value = '';
-            try {
-                await fetch('/api/messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ toUserId: activeContactId, text })
-                });
-                await loadMessages();
-            } catch {
-                showToast('Could not send message. Try again.', 'error');
-            }
-        }
-
-        function handleChatKey(e) { if (e.key === 'Enter') sendMessage(); }
-
-        // Check unread messages badge on load
-        async function checkUnread() {
-            try {
-                const res = await fetch('/api/messages/unread-count');
-                const data = await res.json();
-                const badge = document.getElementById('chatBadge');
-                if (data.count > 0) {
-                    badge.textContent = data.count;
-                    badge.classList.remove('hidden');
-                    badge.classList.add('flex');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            } catch {}
-        }
-        checkUnread();
-        setInterval(checkUnread, 10000);
-
-        // =============================================
-        // CONDUCTOR TICKETING LOGIC
-        // =============================================
-        let currentTripId = null;
-        let selectedPaymentProvider = 0; // MPesa default
-        let currentCapacity = 14;
-
-        async function initTicketingView() {
-            // Load routes
-            try {
-                const res = await fetch('/api/ticketing/routes');
-                const routes = await res.json();
-                const sel = document.getElementById('routeSelect');
-                sel.innerHTML = routes.map(r => `<option value="${r.id}">${r.origin} → ${r.destination} (UGX ${r.fare})</option>`).join('');
-            } catch (e) { console.error(e); }
-
-            // Check if active trip exists
-            try {
-                const res = await fetch('/api/ticketing/trips/active');
-                const trips = await res.json();
-                if (trips.length > 0) {
-                    const active = trips[0];
-                    currentTripId = active.id;
-                    updateLiveCapacity(active.passengerCount, active.capacity, active.route);
-                    document.getElementById('ticket-start-trip').classList.add('hidden');
-                    document.getElementById('ticket-active-trip').classList.remove('hidden');
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        async function startConductorTrip() {
-            if (!checkAuth()) return;
-            const routeId = document.getElementById('routeSelect').value;
-            const vehicleId = document.getElementById('vehicleSelect').value;
-            try {
-                const res = await fetch('/api/ticketing/trips/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ vehicleId: parseInt(vehicleId), routeId: parseInt(routeId) })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to start trip');
-                
-                showToast('Trip Started Successfully', 'success');
-                currentTripId = data.id;
-                
-                const routeSelect = document.getElementById('routeSelect');
-                const routeText = routeSelect.options[routeSelect.selectedIndex].text.split(' (')[0];
-
-                updateLiveCapacity(0, data.capacity, routeText);
-                document.getElementById('ticket-start-trip').classList.add('hidden');
-                document.getElementById('ticket-active-trip').classList.remove('hidden');
-            } catch (e) {
-                showToast(e.message, 'error');
-            }
-        }
-
-        function updateLiveCapacity(count, capacity, routeText) {
-            currentCapacity = capacity;
-            document.getElementById('livePassengerCount').innerText = count;
-            document.getElementById('liveCapacity').innerText = '/ ' + capacity;
-            if (routeText) document.getElementById('liveTripRoute').innerText = routeText;
-
-            const overlay = document.getElementById('fullOverlay');
-            if (count >= capacity) {
-                overlay.classList.remove('hidden');
-            } else {
-                overlay.classList.add('hidden');
-            }
-        }
-
-        function selectPaymentMethod(providerId, btn) {
-            selectedPaymentProvider = providerId;
-            document.querySelectorAll('.pay-btn').forEach(b => {
-                b.className = 'pay-btn border border-white/10 text-white/60 rounded-lg py-2 text-xs font-bold';
-            });
-            btn.className = 'pay-btn border border-indigo-500 bg-indigo-500/20 text-indigo-300 rounded-lg py-2 text-xs font-bold';
-        }
-
-        async function issueTicket() {
-            if (!checkAuth()) return;
-            if (!currentTripId) return;
-            const phone = document.getElementById('passengerPhone').value.trim();
-            if (!phone && selectedPaymentProvider !== 4) { 
-                showToast('Please enter passenger phone number', 'error');
-                return;
-            }
-
-            const btn = document.getElementById('issueBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch('/api/ticketing/issue', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tripId: currentTripId,
-                        passengerPhone: phone,
-                        amount: 0, 
-                        paymentProvider: selectedPaymentProvider
-                    })
-                });
-                const data = await res.json();
-                
-                if (!res.ok) {
-                    if (data.isFull) updateLiveCapacity(data.passengerCount, data.capacity);
-                    throw new Error(data.error || 'Failed to issue ticket');
-                }
-
-                showToast(data.paymentPrompt, 'info');
-
-                console.log("Ticketing Response:", data);
-                const redirectUrl = data.pesapalRedirectUrl || data.redirectUrl;
-
-                if (redirectUrl) {
-                    showToast('Redirecting to PesaPal Checkout...', 'info');
-                    window.location.href = redirectUrl;
-                } else if (data.checkoutRequestId) {
-                    pollPayment(data.checkoutRequestId, data);
-                } else {
-                    updateLiveCapacity(data.passengerCount, data.capacity);
-                    document.getElementById('passengerPhone').value = '';
-                    showToast(`Ticket ${data.ticketCode} Issued (Cash)`, 'success');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-
-            } catch (e) {
-                showToast(e.message, 'error');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        async function pollPayment(checkoutId, ticketData) {
-            const btn = document.getElementById('issueBtn');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin gap-2"></i> Waiting for PIN...';
-
-            let attempts = 0;
-            const interval = setInterval(async () => {
-                attempts++;
-                if (attempts > 15) { 
-                    clearInterval(interval);
-                    showToast('Payment timed out. Try again.', 'error');
-                    btn.innerHTML = 'Issue Ticket';
-                    btn.disabled = false;
-                    return;
-                }
-
-                try {
-                    const res = await fetch('/api/ticketing/payment/confirm', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ checkoutRequestId: checkoutId })
-                    });
-                    const data = await res.json();
-
-                    if (data.confirmed) {
-                        clearInterval(interval);
-                        showToast(`Payment received! Ticket ${data.ticketCode} is valid.`, 'success');
-                        
-                        const currentCount = parseInt(document.getElementById('livePassengerCount').innerText) + 1;
-                        updateLiveCapacity(currentCount, ticketData.capacity);
-                        
-                        document.getElementById('passengerPhone').value = '';
-                        btn.innerHTML = 'Issue Ticket';
-                        btn.disabled = false;
-                    }
-                } catch (e) { console.error(e); }
-            }, 2000);
-        }
-
-        async function endConductorTrip() {
-            if (!currentTripId || !confirm('Are you sure you want to end this trip?')) return;
-            try {
-                const res = await fetch(`/api/ticketing/trips/${currentTripId}/end`, { method: 'POST' });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`Trip Ended! Revenue: UGX ${data.totalRevenue}`, 'success');
-                    currentTripId = null;
-                    document.getElementById('ticket-active-trip').classList.add('hidden');
-                    document.getElementById('ticket-start-trip').classList.remove('hidden');
-                } else {
-                    showToast(data.error, 'error');
-                }
-            } catch (e) { showToast('Error ending trip', 'error'); }
-        }
-
-        // =============================================
-        // MAP — Leaflet.js Initialization
-        // =============================================
-        let matatuMap = null;
-        let userMarker = null;
-        let routeLine = null;
-
-        const transitHubs = {
-            old:        { lat: 0.31634, lng: 32.57966, name: 'Old Taxi Park',  color: '#6366f1' },
-            new:        { lat: 0.31452, lng: 32.57862, name: 'New Taxi Park',  color: '#8b5cf6' },
-            wandegeya:  { lat: 0.33968, lng: 32.57143, name: 'Wandegeya Stage',color: '#06b6d4' },
-            kisaasi:    { lat: 0.38012, lng: 32.61203, name: 'Kisaasi Stage',   color: '#10b981' },
-            ntinda:     { lat: 0.35421, lng: 32.62017, name: 'Ntinda Stage',    color: '#f59e0b' },
-            makerere:   { lat: 0.33490, lng: 32.56990, name: 'Makerere',        color: '#ec4899' },
-            nakawa:     { lat: 0.32897, lng: 32.62940, name: 'Nakawa Stage',    color: '#ef4444' },
-        };
-
-        function buildIcon(color) {
-            return L.divIcon({
-                className: '',
-                html: `<div style="
-                    width:34px;height:34px;border-radius:50% 50% 50% 0;
-                    background:${color};border:3px solid #fff;
-                    box-shadow:0 4px 14px rgba(0,0,0,0.4);
-                    transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;">
-                    <span style="transform:rotate(45deg);font-size:13px;">🚐</span>
-                </div>`,
-                iconSize: [34, 34],
-                iconAnchor: [17, 34],
-                popupAnchor: [0, -36]
-            });
-        }
-
-        // Redundant initMap removed to avoid conflict
-
-        function locateMe() {
-            if (!matatuMap) return;
-            showToast('Finding your location...', 'info');
-            navigator.geolocation.getCurrentPosition(pos => {
-                const { latitude: lat, longitude: lng } = pos.coords;
-
-                if (userMarker) matatuMap.removeLayer(userMarker);
-                userMarker = L.circleMarker([lat, lng], {
-                    radius: 10,
-                    fillColor: '#6366f1',
-                    color: '#fff',
-                    weight: 3,
-                    opacity: 1,
-                    fillOpacity: 0.9
-                }).addTo(matatuMap).bindPopup('<b style="color:#1e293b;">📍 You are here</b>').openPopup();
-
-                matatuMap.flyTo([lat, lng], 15, { duration: 1.5 });
-                showToast('Location found!', 'success');
-            }, () => {
-                showToast('Could not access location. Check browser permissions.', 'info');
-            });
-        }
-
-        function flyToHub(key) {
-            if (!matatuMap) return;
-            const hub = transitHubs[key];
-            if (!hub) return;
-            matatuMap.flyTo([hub.lat, hub.lng], 16, { duration: 1.2 });
-            showToast(`Flying to ${hub.name}`, 'success');
-        }
-
-        function getDirectionsTo(toLat, toLng, name) {
-            if (!matatuMap) return;
-            if (routeLine) matatuMap.removeLayer(routeLine);
-
-            const from = userMarker ? userMarker.getLatLng() : L.latLng(0.3163, 32.5797);
-
-            // Draw a dashed line route from user to destination
-            routeLine = L.polyline(
-                [[from.lat, from.lng], [toLat, toLng]],
-                { color: '#6366f1', weight: 4, opacity: 0.85, dashArray: '10, 8' }
-            ).addTo(matatuMap);
-
-            matatuMap.fitBounds(routeLine.getBounds(), { padding: [60, 60] });
-            matatuMap.closePopup();
-            showToast(`Route to ${name} plotted!`, 'success');
-        }
-
-        async function searchOnMap() {
-            const query = document.getElementById('mapSearch').value.trim();
-            if (!query || !matatuMap) return;
-            showToast(`Searching for "${query}"...`, 'info');
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Kampala, Uganda')}&format=json&limit=1`);
-                const data = await res.json();
-                if (data.length > 0) {
-                    const { lat, lon, display_name } = data[0];
-                    matatuMap.flyTo([lat, lon], 16, { duration: 1.2 });
-                    L.marker([lat, lon], { icon: buildIcon('#f59e0b') })
-                        .addTo(matatuMap)
-                        .bindPopup(`<b style="color:#1e293b;font-size:12px;">${display_name.split(',')[0]}</b>`)
-                        .openPopup();
-                    showToast('Location found on map!', 'success');
-                } else {
-                    showToast('Location not found. Try a different search.', 'info');
-                }
-            } catch {
-                showToast('Search failed. Check your connection.', 'info');
-            }
-        }
+        // Initialize Home on start
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log("Dashboard Ready");
+        });
     </script>
 }
