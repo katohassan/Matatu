@@ -56,13 +56,13 @@ using (var scope = app.Services.CreateScope())
 
     var userManager = services.GetRequiredService<UserManager<User>>();
     
-    // 1. Seed Passenger User (YOU)
-    var existingUser = await userManager.FindByEmailAsync("hassankato272@gmail.com");
+    // 1. Seed Admin User
+    var existingUser = await userManager.FindByEmailAsync("kh256712@students.cavendish.ug");
     if (existingUser == null)
     {
         var user = new User {
-            UserName = "hassankato272@gmail.com",
-            Email = "hassankato272@gmail.com",
+            UserName = "kh256712@students.cavendish.ug",
+            Email = "kh256712@students.cavendish.ug",
             Name = "Kato Hassan",
             Role = Role.Admin,
             EmailConfirmed = true
