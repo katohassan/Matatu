@@ -7,6 +7,13 @@
     var user = await UserManager.GetUserAsync(User);
 }
 
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <div class="bg-indigo-600 text-white text-[10px] font-bold py-2 px-4 text-center tracking-[0.2em] uppercase mb-4 rounded-xl shadow-lg animate-pulse">
+        Guest Mode: Previewing System Dashboard. <a asp-controller="Account" asp-action="Login" class="underline ml-2">Sign in for full access</a>
+    </div>
+}
+
 <!-- Main Container -->
 <div id="view-Home" class="tab-view p-8 pb-32 min-h-screen relative transition-opacity duration-300">
     <header class="flex justify-between items-center mb-16 border-b border-white/5 pb-8 pt-8">
@@ -16,7 +23,7 @@
             </div>
             <div>
                 <p class="label-mono mb-0.5">Welcome Back</p>
-                <h3 class="text-3xl font-bold tracking-tight text-white font-display">@(user?.Name ?? "User")</h3>
+                <h3 class="text-3xl font-bold tracking-tight text-white font-display">@(user?.Name ?? "Guest Traveler")</h3>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -24,11 +31,20 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                 <div class="absolute top-3 right-3 w-2 h-2 bg-indigo-400 rounded-full border-2 border-slate-900 shadow-[0_0_10px_rgba(129,140,248,0.5)]"></div>
             </button>
-            <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
-                <button type="submit" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-red-400 hover:text-red-300 transition-colors">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                </button>
-            </form>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
+                    <button type="submit" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-red-400 hover:text-red-300 transition-colors">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-indigo-400 hover:text-white transition-colors">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="12" cy="7" r="4"/><path d="M9 21v-2a4 4 0 0 1 4-4"/></svg>
+                </a>
+            }
         </div>
     </header>
 
@@ -219,11 +235,20 @@
             <div class="flex items-center gap-3"><i class="fas fa-cog text-white/40"></i> <span>Preferences</span></div>
             <i class="fas fa-chevron-right text-white/20 text-xs"></i>
         </div>
-        <form asp-controller="Account" asp-action="Logout" method="post">
-            <button type="submit" class="w-full glass p-4 rounded-2xl flex justify-between items-center cursor-pointer text-red-400 hover:bg-red-500/10 transition-colors">
-                <div class="flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> <span class="font-bold">Log Out</span></div>
-            </button>
-        </form>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="w-full glass p-4 rounded-2xl flex justify-between items-center cursor-pointer text-red-400 hover:bg-red-500/10 transition-colors">
+                    <div class="flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> <span class="font-bold">Log Out</span></div>
+                </button>
+            </form>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Login" class="w-full btn-primary py-4 text-center block">
+                SIGN IN TO YOUR ACCOUNT
+            </a>
+        }
     </div>
 </div>
 
@@ -418,6 +443,19 @@
 
 @section Scripts {
     <script>
+        const isAuthenticated = @(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false");
+
+        function checkAuth() {
+            if (!isAuthenticated) {
+                showToast('Authentication Required. Please sign in to perform this action.', 'info');
+                setTimeout(() => {
+                    window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname);
+                }, 1500);
+                return false;
+            }
+            return true;
+        }
+
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             const colorClass = type === 'success' ? 'bg-indigo-500 shadow-indigo-500/30' : 'bg-slate-800 shadow-slate-900/50';
@@ -708,6 +746,7 @@
         }
 
         async function startConductorTrip() {
+            if (!checkAuth()) return;
             const routeId = document.getElementById('routeSelect').value;
             const vehicleId = document.getElementById('vehicleSelect').value;
             try {
@@ -756,6 +795,7 @@
         }
 
         async function issueTicket() {
+            if (!checkAuth()) return;
             if (!currentTripId) return;
             const phone = document.getElementById('passengerPhone').value.trim();
             if (!phone && selectedPaymentProvider !== 4) { 

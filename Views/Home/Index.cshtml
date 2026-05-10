@@ -72,11 +72,9 @@
                 INITIATE SESSION
             </button>
 
-            <form asp-controller="Account" asp-action="GuestLogin" method="post" class="w-full">
-                <button type="submit" class="btn-guest mt-6 w-full">
-                    GUEST ACCESS
-                </button>
-            </form>
+            <a asp-controller="Home" asp-action="Dashboard" class="btn-guest mt-6 w-full text-center flex items-center justify-center">
+                GUEST ACCESS
+            </a>
 
             <div class="mt-auto flex justify-between px-4 pb-12">
                 <button type="button" class="text-white/30 font-medium text-xs hover:text-white transition-colors">FORGOT KEY?</button>
