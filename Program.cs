@@ -73,6 +73,16 @@ using (var scope = app.Services.CreateScope())
         };
         await userManager.CreateAsync(user, "Hassan@20");
     }
+    else
+    {
+        // FORCE PROMOTION: Ensure existing user is upgraded to Admin
+        if (existingUser.Role != Role.Admin)
+        {
+            existingUser.Role = Role.Admin;
+            await userManager.UpdateAsync(existingUser);
+            Console.WriteLine($">>> SYSTEM: FORCED ADMIN PROMOTION FOR {existingUser.Email}");
+        }
+    }
 
     // 2. Seed Driver User
     var existingDriver = await userManager.FindByEmailAsync("driver@matatu.ug");
