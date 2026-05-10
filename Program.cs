@@ -3,6 +3,7 @@ using MatatuMVC.Data;
 using MatatuMVC.Models;
 using MatatuMVC.Services;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 Console.WriteLine(">>> MATATU SYSTEM BOOTING: " + DateTime.UtcNow);
 
@@ -24,21 +25,23 @@ builder.Services.AddScoped<IPesaPalService, PesaPalService>();
 builder.Services.AddScoped<ISmsService, AfricaTalkingSmsService>();
 
 builder.Services.AddIdentity<User, IdentityRole>(options => {
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 6;
-    options.User.RequireUniqueEmail = true;
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 4;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
 })
 .AddEntityFrameworkStores<MatatuContext>()
 .AddDefaultTokenProviders();
+
+// --- MAP ROLE ENUM TO IDENTITY CLAIMS ---
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>, CustomClaimsPrincipalFactory>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
-    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.AccessDeniedPath = "/Home/Dashboard"; 
 });
 
 var app = builder.Build();
@@ -50,10 +53,9 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<MatatuContext>();
     try {
         Console.WriteLine(">>> SYSTEM: BUILDING DATABASE SCHEMA...");
-        // Use synchronous call to force the thread to wait until the file is physically written
         context.Database.EnsureCreated(); 
         Console.WriteLine(">>> SYSTEM: DATABASE READY. FLUSHING...");
-        Thread.Sleep(2000); // 2-second safety buffer for SQLite file lock
+        Thread.Sleep(2000); 
     } catch (Exception ex) {
         Console.WriteLine(">>> DATABASE SCHEMA ERROR: " + ex.Message);
     }
@@ -75,7 +77,7 @@ using (var scope = app.Services.CreateScope())
     }
     else
     {
-        // FORCE PROMOTION: Ensure existing user is upgraded to Admin
+        // FORCE PROMOTION
         if (existingUser.Role != Role.Admin)
         {
             existingUser.Role = Role.Admin;
@@ -91,32 +93,14 @@ using (var scope = app.Services.CreateScope())
         var driver = new User {
             UserName = "driver@matatu.ug",
             Email = "driver@matatu.ug",
-            Name = "Mukasa John",
+            Name = "Musa Driver",
             Role = Role.Driver,
-            EmailConfirmed = true,
-            PhoneNumber = "0770000001"
+            EmailConfirmed = true
         };
-        await userManager.CreateAsync(driver, "Hassan@20");
+        await userManager.CreateAsync(driver, "Driver@123");
     }
-
-        // Seed some Demo Trips if none exist
-        if (!context.Trips.Any())
-        {
-            var route = context.Routes.First();
-            var vehicle = context.Vehicles.First();
-            context.Trips.Add(new Trip { 
-                VehicleId = vehicle.Id, 
-                RouteId = route.Id, 
-                Status = TripStatus.Active, 
-                StartTime = DateTime.UtcNow,
-                CurrentLat = 0.3476,
-                CurrentLng = 32.5825
-            });
-            await context.SaveChangesAsync();
-        }
 }
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -125,18 +109,26 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
-app.MapControllers(); // for API controllers
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+// --- CUSTOM CLAIMS FACTORY ---
+public class CustomClaimsPrincipalFactory : UserClaimsPrincipalFactory<User, IdentityRole>
+{
+    public CustomClaimsPrincipalFactory(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, Microsoft.Extensions.Options.IOptions<IdentityOptions> optionsAccessor)
+        : base(userManager, roleManager, optionsAccessor) { }
+
+    protected override async Task<ClaimsIdentity> GenerateClaimsAsync(User user)
+    {
+        var identity = await base.GenerateClaimsAsync(user);
+        identity.AddClaim(new Claim(ClaimTypes.Role, user.Role.ToString()));
+        return identity;
+    }
+}
