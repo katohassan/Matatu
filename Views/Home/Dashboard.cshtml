@@ -224,33 +224,52 @@
     </div>
 </div>
 
-<!-- Profile View -->
-<div id="view-Profile" class="tab-view hidden p-8 pb-32 min-h-screen relative opacity-0 transition-opacity duration-300">
-    <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">Profile Settings</h3>
-    <div class="glass p-6 rounded-3xl mb-6 text-center">
-        <div class="w-24 h-24 rounded-full mx-auto mb-4 bg-indigo-500/20 p-1">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@(user?.Name ?? "Guest")" class="w-full h-full rounded-full bg-indigo-500/10" />
+<!-- Profile View (Hard-coded for absolute visibility) -->
+<div id="view-Profile" class="tab-view hidden p-8 pb-32 min-h-screen relative" style="background:#0f172a;z-index:5;">
+    <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">My Account</h3>
+    
+    <div class="glass p-8 rounded-3xl mb-8 text-center border border-white/10 shadow-2xl">
+        <div class="w-28 h-28 rounded-full mx-auto mb-6 bg-indigo-500/20 p-1 border-2 border-indigo-500/30">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@(user?.Name ?? "Guest")" class="w-full h-full rounded-full bg-slate-800" />
         </div>
-        <h4 class="font-bold text-xl text-white">@(user?.Name ?? "User")</h4>
-        <p class="text-white/40 text-sm">@(user?.Email ?? "user@example.com")</p>
+        <h4 class="font-bold text-2xl text-white mb-1">@(user?.Name ?? "Guest Traveler")</h4>
+        <p class="text-indigo-300/60 text-sm font-medium tracking-wide">@(user?.Email ?? "Preview Mode")</p>
+        <span class="inline-block mt-4 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+            @(user?.Role.ToString() ?? "Guest")
+        </span>
     </div>
     
-    <div class="space-y-3">
-        <div class="glass p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-colors">
-            <div class="flex items-center gap-3"><i class="fas fa-cog text-white/40"></i> <span>Preferences</span></div>
+    <div class="space-y-4">
+        <div class="glass p-5 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/5">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-cog"></i></div>
+                <span class="font-bold text-white/80">Account Preferences</span>
+            </div>
             <i class="fas fa-chevron-right text-white/20 text-xs"></i>
         </div>
+        
+        <div class="glass p-5 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-all border border-white/5">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40"><i class="fas fa-shield-alt"></i></div>
+                <span class="font-bold text-white/80">Security & Privacy</span>
+            </div>
+            <i class="fas fa-chevron-right text-white/20 text-xs"></i>
+        </div>
+
         @if (User.Identity?.IsAuthenticated == true)
         {
-            <form asp-controller="Account" asp-action="Logout" method="post">
-                <button type="submit" class="w-full glass p-4 rounded-2xl flex justify-between items-center cursor-pointer text-red-400 hover:bg-red-500/10 transition-colors">
-                    <div class="flex items-center gap-3"><i class="fas fa-sign-out-alt"></i> <span class="font-bold">Log Out</span></div>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="mt-8">
+                <button type="submit" class="w-full glass p-5 rounded-2xl flex justify-between items-center cursor-pointer text-red-400 hover:bg-red-500/10 transition-all border border-red-500/10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/5 flex items-center justify-center"><i class="fas fa-sign-out-alt"></i></div>
+                        <span class="font-black uppercase tracking-widest text-xs">Sign Out</span>
+                    </div>
                 </button>
             </form>
         }
         else
         {
-            <a asp-controller="Account" asp-action="Login" class="w-full btn-primary py-4 text-center block">
+            <a asp-controller="Account" asp-action="Login" class="w-full btn-primary py-5 text-center block mt-8 shadow-xl shadow-indigo-500/20">
                 SIGN IN TO YOUR ACCOUNT
             </a>
         }
