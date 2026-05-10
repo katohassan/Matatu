@@ -32,6 +32,9 @@ public class Vehicle
     public DateTime? InsuranceExpiry { get; set; }
     public DateTime? InspectionExpiry { get; set; }
     public DateTime? PsvLicenseExpiry { get; set; }
+    public DateTime? LastServiceDate { get; set; }
+    public DateTime? NextServiceDue { get; set; }
+    public int CurrentOdometer { get; set; }
 }
 
 // ─── Route ───────────────────────────────────────────────────────────────────

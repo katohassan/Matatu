@@ -257,6 +257,24 @@
     </div>
 </div>
 
+@if (User.IsInRole("Admin") || User.IsInRole("Owner"))
+{
+    <!-- Admin/Fleet View -->
+    <div id="view-Admin" class="tab-view hidden p-8 pb-32 min-h-screen relative opacity-0 transition-opacity duration-300">
+        <header class="mb-8 border-b border-white/5 pb-4 pt-8">
+            <h2 class="text-3xl font-display font-bold text-white tracking-tight italic">Fleet Control</h2>
+            <p class="text-white/40 mt-1 uppercase text-[10px] tracking-widest font-bold">Vehicle & Maintenance Log</p>
+        </header>
+
+        <div id="fleetList" class="space-y-6">
+            <div class="glass p-8 rounded-3xl text-center">
+                <i class="fas fa-spinner fa-spin text-indigo-400 mb-4"></i>
+                <p class="text-white/40 text-sm">Synchronizing fleet data...</p>
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Tickets/Conductor View -->
 <div id="view-Tickets" class="tab-view hidden opacity-0 transition-opacity duration-300 p-8 pb-32 min-h-screen relative">
     <header class="mb-8 border-b border-white/5 pb-4">
@@ -384,6 +402,13 @@
         <div id="tab-Map" onclick="switchTab('Map')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg><span class="mt-1 text-[10px] font-medium">Map</span></div>
         <div id="tab-Tickets" onclick="switchTab('Tickets')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5h-2M15 9h-2M15 13h-2M15 17h-2M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2M19 5h-2v14h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/></svg><span class="mt-1 text-[10px] font-medium">Tickets</span></div>
         <div id="tab-Trips" onclick="switchTab('Trips')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/><line x1="7" x2="7" y1="15" y2="15"/><line x1="12" x2="12" y1="15" y2="15"/><line x1="17" x2="17" y1="15" y2="15"/></svg><span class="mt-1 text-[10px] font-medium">Trips</span></div>
+        @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
+        {
+            <div id="tab-Admin" onclick="switchTab('Admin')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <span class="mt-1 text-[10px] font-medium">Fleet</span>
+            </div>
+        }
         <div id="tab-Profile" onclick="switchTab('Profile')" class="nav-item flex flex-col items-center cursor-pointer text-white/40 hover:text-white/80 transition-colors"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="mt-1 text-[10px] font-medium">Profile</span></div>
     </nav>
 </div>
@@ -586,6 +611,69 @@
                 panel.classList.remove('hidden');
                 requestAnimationFrame(() => panel.classList.remove('opacity-0'));
             }, 600);
+        }
+
+        // --- Admin/Fleet Logic ---
+        async function fetchFleet() {
+            try {
+                const res = await fetch('/api/management/vehicles');
+                const vehicles = await res.json();
+                const container = document.getElementById('fleetList');
+                
+                container.innerHTML = vehicles.map(v => `
+                    <div class="glass p-6 rounded-3xl border border-white/5 space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-white text-xl">${v.plateNumber}</h4>
+                                <p class="text-white/30 text-[10px] uppercase font-bold tracking-widest">${v.model || 'Standard Matatu'}</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-3 py-1 rounded-full ${v.isActive ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'}">${v.isActive ? 'ACTIVE' : 'INACTIVE'}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white/5 p-3 rounded-2xl">
+                                <p class="text-[8px] text-white/30 uppercase font-bold mb-1">Odometer</p>
+                                <p class="text-white font-bold">${v.currentOdometer?.toLocaleString() || 0} KM</p>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-2xl">
+                                <p class="text-[8px] text-white/30 uppercase font-bold mb-1">Next Service</p>
+                                <p class="text-white font-bold">${v.nextServiceDue ? new Date(v.nextServiceDue).toLocaleDateString() : 'Not Set'}</p>
+                            </div>
+                        </div>
+
+                        <button onclick="openMaintenanceModal(${v.id}, '${v.plateNumber}')" class="w-full glass border border-indigo-500/30 text-indigo-300 py-3 rounded-xl text-xs font-bold hover:bg-indigo-500/10 transition-all">
+                            UPDATE LOGS
+                        </button>
+                    </div>
+                `).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        let currentMaintenanceVehicleId = null;
+        function openMaintenanceModal(id, plate) {
+            currentMaintenanceVehicleId = id;
+            showToast(`Updating logs for ${plate}`, 'info');
+            // For simplicity in this demo, we'll just prompt. A real modal would be better.
+            const odo = prompt("Enter current Odometer (KM):");
+            if (odo) updateMaintenance(id, parseInt(odo));
+        }
+
+        async function updateMaintenance(id, odometer) {
+            try {
+                const res = await fetch(`/api/management/vehicles/${id}/maintenance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        serviceDate: new Date().toISOString(), 
+                        nextDue: new Date(Date.now() + 30*24*60*60*1000).toISOString(), // 30 days later
+                        odometer 
+                    })
+                });
+                if (res.ok) {
+                    showToast('Maintenance log updated!', 'success');
+                    fetchFleet();
+                }
+            } catch (e) { showToast('Update failed', 'error'); }
         }
 
         // --- GPS & Map Logic ---
@@ -836,6 +924,7 @@
                     if (typeof initMap === 'function') initMap();
                 }, 300);
             }
+            if (tabName === 'Admin') fetchFleet();
             // Reset all nav tabs
             const tabs = ['Home', 'Inbox', 'Trips', 'Profile'];
             tabs.forEach(t => {
