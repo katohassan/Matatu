@@ -36,9 +36,12 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 var app = builder.Build();
 
-// Seed Default User
+// Seed Default User & Apply Migrations
 using (var scope = app.Services.CreateScope())
 {
+    var context = scope.ServiceProvider.GetRequiredService<MatatuContext>();
+    await context.Database.MigrateAsync();
+
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
     var existingUser = await userManager.FindByEmailAsync("hassankato272@gmail.com");
     if (existingUser == null)
