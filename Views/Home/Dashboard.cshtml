@@ -966,45 +966,49 @@
         }
 
         function switchTab(tabName) {
-            if (tabName === 'Trips') fetchTripHistory();
-            if (tabName === 'Map') {
-                setTimeout(() => {
-                    if (typeof initMap === 'function') initMap();
-                }, 300);
-            }
-            if (tabName === 'Admin') fetchFleet();
-            // Reset all nav tabs
-            const tabs = ['Home', 'Inbox', 'Trips', 'Profile'];
-            tabs.forEach(t => {
-                const el = document.getElementById(`tab-${t}`);
-                el.classList.remove('active', 'text-indigo-400');
-                el.classList.add('text-white/40');
-            });
-
-            // Set active nav tab
-            const activeEl = document.getElementById(`tab-${tabName}`);
-            activeEl.classList.add('active', 'text-indigo-400');
-            activeEl.classList.remove('text-white/40');
-
-            // Hide all views
-            document.querySelectorAll('.tab-view').forEach(view => {
-                view.classList.add('hidden', 'opacity-0');
-            });
-
-            // Show selected view
-            const activeView = document.getElementById(`view-${tabName}`);
-            activeView.classList.remove('hidden');
-            // Small delay for display block to register before fading in
-            setTimeout(() => {
-                activeView.classList.remove('opacity-0');
-                // Initialize map after it becomes visible
+            try {
+                if (tabName === 'Trips') fetchTripHistory();
                 if (tabName === 'Map') {
-                    setTimeout(() => initMap(), 100);
+                    setTimeout(() => {
+                        if (typeof initMap === 'function') initMap();
+                    }, 300);
                 }
-                if (tabName === 'Tickets') {
-                    initTicketingView();
+                if (tabName === 'Admin' && typeof fetchFleet === 'function') fetchFleet();
+                
+                // Reset all nav tabs (expanded list)
+                const tabs = ['Home', 'Inbox', 'Map', 'Tickets', 'Trips', 'Profile', 'Admin'];
+                tabs.forEach(t => {
+                    const el = document.getElementById(`tab-${t}`);
+                    if (el) {
+                        el.classList.remove('active', 'text-indigo-400');
+                        el.classList.add('text-white/40');
+                    }
+                });
+
+                // Set active nav tab
+                const activeEl = document.getElementById(`tab-${tabName}`);
+                if (activeEl) {
+                    activeEl.classList.add('active', 'text-indigo-400');
+                    activeEl.classList.remove('text-white/40');
                 }
-            }, 50);
+
+                // Hide all views
+                document.querySelectorAll('.tab-view').forEach(view => {
+                    view.classList.add('hidden', 'opacity-0');
+                });
+
+                // Show selected view
+                const activeView = document.getElementById(`view-${tabName}`);
+                if (activeView) {
+                    activeView.classList.remove('hidden');
+                    // Small delay for display block to register before fading in
+                    setTimeout(() => {
+                        activeView.classList.remove('opacity-0');
+                    }, 50);
+                }
+            } catch (err) {
+                console.error("switchTab failed", err);
+            }
         }
 
         let chatOpen = false;
@@ -1369,43 +1373,7 @@
             });
         }
 
-        function initMap() {
-            if (matatuMap) { matatuMap.invalidateSize(); return; }
-
-            matatuMap = L.map('matatuMap', {
-                center: [0.3163, 32.5797],
-                zoom: 14,
-                zoomControl: false
-            });
-
-            // Dark styled map tiles
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap | CartoDB',
-                maxZoom: 19,
-                subdomains: 'abcd'
-            }).addTo(matatuMap);
-
-            // Add zoom control bottom-right
-            L.control.zoom({ position: 'bottomright' }).addTo(matatuMap);
-
-            // Add markers for all transit hubs
-            Object.entries(transitHubs).forEach(([key, hub]) => {
-                const marker = L.marker([hub.lat, hub.lng], { icon: buildIcon(hub.color) })
-                    .addTo(matatuMap)
-                    .bindPopup(`
-                        <div style="font-family:system-ui;padding:4px;">
-                            <strong style="font-size:14px;color:#1e293b;">${hub.name}</strong><br/>
-                            <span style="font-size:11px;color:#64748b;">Transit Hub · Kampala</span><br/>
-                            <button onclick="getDirectionsTo(${hub.lat},${hub.lng},'${hub.name}')"
-                                style="margin-top:8px;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">
-                                🗺 Get Directions
-                            </button>
-                        </div>`, { maxWidth: 200 });
-            });
-
-            // Scale bar
-            L.control.scale({ position: 'bottomleft', metric: true, imperial: false }).addTo(matatuMap);
-        }
+        // Redundant initMap removed to avoid conflict
 
         function locateMe() {
             if (!matatuMap) return;
