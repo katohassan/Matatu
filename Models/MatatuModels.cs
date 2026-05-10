@@ -6,7 +6,7 @@ namespace MatatuMVC.Models;
 
 public enum Role { Passenger, Driver, Conductor, Owner, Admin }
 public enum TripStatus { Active, Completed, Cancelled }
-public enum TicketStatus { Pending, Paid, Cancelled }
+public enum TicketStatus { Pending, Paid, Boarded, Cancelled }
 public enum PaymentStatus { Pending, Success, Failed, Timeout, Refunded }
 public enum PaymentProvider { MPesa, AirtelMoney, MTNMoMo, TigoPesa, Cash }
 

@@ -316,9 +316,68 @@ public class TicketingController : ControllerBase
             tickets
         });
     }
+
+    // ── GET /api/ticketing/history ───────────────────────────────────────────
+    [HttpGet("history")]
+    public async Task<IActionResult> GetPassengerHistory()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+
+        var history = await _db.Tickets
+            .Include(t => t.Trip)
+                .ThenInclude(tr => tr!.Route)
+            .Include(t => t.Trip)
+                .ThenInclude(tr => tr!.Vehicle)
+            .Where(t => t.PassengerId == user.Id || t.PassengerPhone == user.PhoneNumber)
+            .OrderByDescending(t => t.IssuedAt)
+            .Select(t => new {
+                t.Id,
+                t.TicketCode,
+                t.Amount,
+                t.Status = t.Status.ToString(),
+                t.IssuedAt,
+                Route = t.Trip != null && t.Trip.Route != null ? $"{t.Trip.Route.Origin} → {t.Trip.Route.Destination}" : "Unknown",
+                Vehicle = t.Trip != null && t.Trip.Vehicle != null ? t.Trip.Vehicle.PlateNumber : "Unknown"
+            })
+            .ToListAsync();
+
+        return Ok(history);
+    }
+
+    // ── POST /api/ticketing/verify ───────────────────────────────────────────
+    [HttpPost("verify")]
+    public async Task<IActionResult> VerifyTicket([FromBody] VerifyTicketDto dto)
+    {
+        var conductor = await _userManager.GetUserAsync(User);
+        if (conductor == null) return Unauthorized();
+
+        var ticket = await _db.Tickets
+            .Include(t => t.Trip)
+            .FirstOrDefaultAsync(t => t.TicketCode == dto.TicketCode);
+
+        if (ticket == null)
+            return NotFound(new { error = "Ticket not found." });
+
+        if (ticket.Status == TicketStatus.Boarded)
+            return BadRequest(new { error = "Ticket already used/boarded." });
+
+        if (ticket.Status != TicketStatus.Paid)
+            return BadRequest(new { error = "Ticket has not been paid yet." });
+
+        // Mark as boarded
+        ticket.Status = TicketStatus.Boarded;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { 
+            message = "Ticket verified! Passenger boarded.",
+            ticketCode = ticket.TicketCode
+        });
+    }
 }
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 public record StartTripDto(int VehicleId, int RouteId, string? DriverId);
 public record IssueTicketDto(int TripId, string PassengerPhone, string? PassengerId, decimal Amount, PaymentProvider PaymentProvider);
 public record ConfirmPaymentDto(string CheckoutRequestId);
+public record VerifyTicketDto(string TicketCode);

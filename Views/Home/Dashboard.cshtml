@@ -210,12 +210,10 @@
 <!-- Trips View -->
 <div id="view-Trips" class="tab-view hidden p-8 pb-32 min-h-screen relative opacity-0 transition-opacity duration-300">
     <h3 class="text-3xl font-bold tracking-tight text-white font-display mb-8 pt-8">My Trips</h3>
-    <div class="glass p-6 rounded-3xl mb-4 flex justify-between items-center">
-        <div>
-            <p class="label-mono mb-1 text-white/40">Upcoming</p>
-            <h5 class="font-bold text-white">No active trips</h5>
+    <div id="tripsHistoryContainer" class="space-y-4">
+        <div class="glass p-6 rounded-3xl mb-4 flex justify-between items-center animate-pulse">
+            <div class="h-10 w-48 bg-white/5 rounded-lg"></div>
         </div>
-        <button class="btn-primary !w-auto !py-2 px-6 text-xs" onclick="switchTab('Home')">FIND MATATU</button>
     </div>
 </div>
 
@@ -294,6 +292,10 @@
                 <h3 class="text-xl font-bold text-white">Vehicle is Full</h3>
                 <p class="text-white/80 text-sm">Cannot issue more tickets.</p>
             </div>
+
+            <button onclick="openQRScanner()" class="w-full glass border border-green-500/30 bg-green-500/5 text-green-300 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mb-4">
+                <i class="fas fa-qrcode"></i> SCAN TICKET
+            </button>
 
             <h3 class="text-lg font-bold text-white">Issue Ticket</h3>
             <div>
@@ -441,6 +443,44 @@
     </div>
 </div>
 
+<!-- QR Scanner Modal -->
+<div id="qrModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-xl" onclick="closeQRScanner()"></div>
+    <div class="glass w-full max-w-md p-8 rounded-4xl relative z-10 border border-white/10">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-bold text-white font-display italic">Scanner</h3>
+            <button onclick="closeQRScanner()" class="w-10 h-10 rounded-xl glass flex items-center justify-center text-white/40 hover:text-white transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="qr-reader" class="rounded-2xl overflow-hidden border border-white/5 bg-black/40 aspect-square"></div>
+        <p class="text-center text-white/40 text-[10px] uppercase font-bold tracking-[0.2em] mt-8">Align QR code within the frame</p>
+    </div>
+</div>
+
+<!-- Ticket Details Modal (For QR Result/History) -->
+<div id="ticketModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-6">
+    <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-xl" onclick="closeTicketModal()"></div>
+    <div class="glass w-full max-w-md p-8 rounded-4xl relative z-10 border border-white/10 text-center">
+        <div id="ticketQRCode" class="mx-auto bg-white p-4 rounded-3xl w-48 h-48 mb-8 shadow-2xl"></div>
+        <h3 id="modalTicketCode" class="text-3xl font-black text-white tracking-widest italic mb-2">TICKET-CODE</h3>
+        <p id="modalTicketRoute" class="text-indigo-300 font-bold uppercase text-xs tracking-widest mb-8">KLA → KIS</p>
+        
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="glass p-4 rounded-2xl">
+                <p class="label-mono mb-1">Status</p>
+                <p id="modalTicketStatus" class="font-bold text-green-400">PAID</p>
+            </div>
+            <div class="glass p-4 rounded-2xl">
+                <p class="label-mono mb-1">Fare</p>
+                <p id="modalTicketFare" class="font-bold text-white">UGX 2,500</p>
+            </div>
+        </div>
+        
+        <button onclick="closeTicketModal()" class="btn-primary">DISMISS</button>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         const isAuthenticated = @(User.Identity?.IsAuthenticated.ToString().ToLower() ?? "false");
@@ -541,7 +581,136 @@
             }, 600);
         }
 
+        // --- QR Scanner & History Logic ---
+        let html5QrCode = null;
+
+        async function fetchTripHistory() {
+            if (!isAuthenticated) {
+                document.getElementById('tripsHistoryContainer').innerHTML = `
+                    <div class="glass p-8 rounded-3xl text-center">
+                        <p class="text-white/40 text-sm mb-6">Sign in to view your personalized trip history and tickets.</p>
+                        <a href="/Account/Login" class="btn-primary inline-block !w-auto px-10">SIGN IN</a>
+                    </div>`;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/ticketing/history');
+                const history = await res.json();
+                const container = document.getElementById('tripsHistoryContainer');
+                
+                if (history.length === 0) {
+                    container.innerHTML = `
+                        <div class="glass p-8 rounded-3xl text-center">
+                            <i class="fas fa-route text-4xl text-white/10 mb-4"></i>
+                            <p class="text-white/40 text-sm">No trips recorded yet. Start your journey today!</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = history.map(t => {
+                    const ticketData = JSON.stringify(t).replace(/"/g, '&quot;');
+                    return `
+                    <div class="glass p-6 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer group" onclick="showTicketDetails(${ticketData})">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="label-mono text-indigo-400 mb-1">${new Date(t.issuedAt).toLocaleDateString()}</p>
+                                <h4 class="font-bold text-white text-lg">${t.route}</h4>
+                            </div>
+                            <span class="text-[10px] font-bold px-3 py-1 rounded-full ${t.status === 'Boarded' ? 'bg-green-400/10 text-green-400' : 'bg-indigo-400/10 text-indigo-400'}">${t.status}</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div class="flex gap-4">
+                                <div class="text-white/30 text-[10px] uppercase font-bold"><i class="fas fa-bus mr-1"></i> ${t.vehicle}</div>
+                                <div class="text-white/30 text-[10px] uppercase font-bold"><i class="fas fa-hashtag mr-1"></i> ${t.ticketCode}</div>
+                            </div>
+                            <p class="font-bold text-white">UGX ${t.amount.toLocaleString()}</p>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        function showTicketDetails(ticket) {
+            document.getElementById('modalTicketCode').innerText = ticket.ticketCode;
+            document.getElementById('modalTicketRoute').innerText = ticket.route;
+            document.getElementById('modalTicketStatus').innerText = ticket.status.toUpperCase();
+            document.getElementById('modalTicketFare').innerText = 'UGX ' + ticket.amount.toLocaleString();
+            
+            // Generate QR Code
+            document.getElementById('ticketQRCode').innerHTML = "";
+            new QRCode(document.getElementById('ticketQRCode'), {
+                text: ticket.ticketCode,
+                width: 160,
+                height: 160,
+                colorDark: "#0f172a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('ticketModal').classList.remove('hidden');
+        }
+
+        function closeTicketModal() {
+            document.getElementById('ticketModal').classList.add('hidden');
+        }
+
+        function openQRScanner() {
+            if (!checkAuth()) return;
+            document.getElementById('qrModal').classList.remove('hidden');
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+        }
+
+        async function onScanSuccess(decodedText) {
+            closeQRScanner();
+            showToast('Ticket Found: ' + decodedText, 'info');
+            
+            try {
+                const res = await fetch('/api/ticketing/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticketCode: decodedText })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showToast(data.message, 'success');
+                    if (currentTripId) {
+                        fetchActiveTripSummary(currentTripId);
+                    }
+                } else {
+                    showToast(data.error || 'Invalid Ticket', 'error');
+                }
+            } catch (e) { 
+                showToast('Verification failed', 'error');
+            }
+        }
+
+        function closeQRScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qrModal').classList.add('hidden');
+                }).catch(err => {
+                    document.getElementById('qrModal').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('qrModal').classList.add('hidden');
+            }
+        }
+
+        async function fetchActiveTripSummary(id) {
+            try {
+                const res = await fetch(`/api/ticketing/trips/${id}/summary`);
+                const data = await res.json();
+                updateLiveCapacity(data.passengerCount, data.capacity, data.route);
+            } catch (e) {}
+        }
+
         function switchTab(tabName) {
+            if (tabName === 'Trips') fetchTripHistory();
             // Reset all nav tabs
             const tabs = ['Home', 'Inbox', 'Trips', 'Profile'];
             tabs.forEach(t => {
