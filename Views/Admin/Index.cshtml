@@ -1,198 +1,270 @@
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Admin Command Center";
+    ViewData["Title"] = "Admin OS";
 }
 
-<div class="min-h-screen bg-[#0f172a] text-white p-6 pb-32">
-    <!-- ADMIN SIDEBAR (Hidden on mobile, logic in script) -->
-    <div id="admin-sidebar" class="fixed left-0 top-0 h-full w-64 glass border-r border-white/5 z-50 p-6 hidden lg:block">
-        <h2 class="text-2xl font-black text-indigo-400 mb-10 tracking-tighter italic">ADMIN OS</h2>
-        <nav class="space-y-4">
-            <div onclick="showSection('overview')" class="admin-nav-item active flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
-                <i class="fas fa-chart-pie text-indigo-400"></i>
-                <span class="font-bold text-sm">Overview</span>
+<div class="min-h-screen bg-[#0f172a] text-white flex">
+    <!-- SIDEBAR -->
+    <aside class="w-72 glass border-r border-white/5 p-8 flex flex-col gap-10 fixed inset-y-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fas fa-shield-alt text-white"></i>
             </div>
-            <div onclick="showSection('users')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+            <div>
+                <h2 class="font-black text-xl tracking-tighter italic">ADMIN<span class="text-indigo-400">OS</span></h2>
+                <p class="text-[8px] font-bold text-white/30 uppercase tracking-[0.3em]">Management Suite</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 space-y-2">
+            <button onclick="showSection('overview')" class="nav-btn active w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all">
+                <i class="fas fa-th-large text-indigo-400"></i>
+                <span class="font-bold text-sm">Dashboard</span>
+            </button>
+            <button onclick="showSection('users')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all">
                 <i class="fas fa-users text-white/40"></i>
                 <span class="font-bold text-sm">Users</span>
-            </div>
-            <div onclick="showSection('trips')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+            </button>
+            <button onclick="showSection('trips')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all">
                 <i class="fas fa-route text-white/40"></i>
                 <span class="font-bold text-sm">Trips</span>
-            </div>
-            <div onclick="showSection('fleet')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+            </button>
+            <button onclick="showSection('fleet')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all">
                 <i class="fas fa-bus text-white/40"></i>
                 <span class="font-bold text-sm">Fleet</span>
-            </div>
-            <div onclick="showSection('payments')" class="admin-nav-item flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:bg-white/5 transition-all">
+            </button>
+            <button onclick="showSection('payments')" class="nav-btn w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all">
                 <i class="fas fa-wallet text-white/40"></i>
                 <span class="font-bold text-sm">Payments</span>
-            </div>
+            </button>
         </nav>
-    </div>
+
+        <div class="pt-8 border-t border-white/5">
+             <a href="/Home/Dashboard" class="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all text-white/40">
+                <i class="fas fa-arrow-left"></i>
+                <span class="font-bold text-sm">Exit Admin</span>
+            </a>
+        </div>
+    </aside>
 
     <!-- MAIN CONTENT -->
-    <div class="lg:ml-64 space-y-10">
+    <main class="flex-1 ml-72 p-10 space-y-10">
         
         <!-- SECTION: OVERVIEW -->
         <div id="section-overview" class="admin-section space-y-10">
             <header class="flex justify-between items-center">
-                <h1 class="text-3xl font-black tracking-tight italic">System <span class="text-indigo-400">Overview</span></h1>
-                <div class="glass px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-green-400 animate-pulse">Live Server Status</div>
+                <h1 class="text-4xl font-black italic tracking-tight">System <span class="text-indigo-400">Status</span></h1>
+                <div class="flex gap-4">
+                    <button onclick="loadStats()" class="glass p-3 rounded-xl text-white/40 hover:text-white transition-all"><i class="fas fa-sync-alt"></i></button>
+                    <div class="glass px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-green-400 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> Service Operational
+                    </div>
+                </div>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
-                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Revenue Today</p>
+            <div class="grid grid-cols-4 gap-6">
+                <div class="glass p-8 rounded-[32px] border border-white/5 shadow-2xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Daily Revenue</p>
                     <h3 id="stat-revenue" class="text-3xl font-black text-white">UGX --</h3>
                 </div>
-                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
-                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Total Trips</p>
+                <div class="glass p-8 rounded-[32px] border border-white/5 shadow-2xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Total Trips</p>
                     <h3 id="stat-trips" class="text-3xl font-black text-white">--</h3>
                 </div>
-                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
-                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Active Fleet</p>
+                <div class="glass p-8 rounded-[32px] border border-white/5 shadow-2xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Active Vehicles</p>
                     <h3 id="stat-fleet" class="text-3xl font-black text-white">--</h3>
                 </div>
-                <div class="glass p-6 rounded-3xl border border-white/5 shadow-xl">
-                    <p class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">Occupancy</p>
+                <div class="glass p-8 rounded-[32px] border border-white/5 shadow-2xl">
+                    <p class="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">System Load</p>
                     <h3 id="stat-occupancy" class="text-3xl font-black text-indigo-400">--%</h3>
                 </div>
             </div>
 
-            <!-- CHART AREA -->
-            <div class="glass p-8 rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden">
-                <h3 class="text-lg font-bold mb-8">Revenue Trends (Last 7 Days)</h3>
-                <canvas id="revenueChart" style="width:100%; height:300px;"></canvas>
+            <div class="glass p-10 rounded-[40px] border border-white/5 shadow-2xl">
+                <h4 class="font-bold text-white/40 text-xs uppercase tracking-widest mb-8">Revenue Analytics</h4>
+                <div style="height:350px;"><canvas id="revenueChart"></canvas></div>
             </div>
         </div>
 
         <!-- SECTION: USERS -->
-        <div id="section-users" class="admin-section hidden space-y-6">
-            <h2 class="text-2xl font-black italic">User <span class="text-indigo-400">Database</span></h2>
-            <div class="glass rounded-3xl border border-white/5 overflow-hidden overflow-x-auto">
+        <div id="section-users" class="admin-section hidden space-y-8">
+            <header class="flex justify-between items-center">
+                <h1 class="text-3xl font-black italic">User <span class="text-indigo-400">Database</span></h1>
+                <input type="text" placeholder="Search user..." class="glass px-6 py-3 rounded-2xl border-none text-sm outline-none focus:ring-2 ring-indigo-500/50 w-64" />
+            </header>
+
+            <div class="glass rounded-[32px] border border-white/5 overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-white/5 border-b border-white/5">
                         <tr>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Name</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Email</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Role</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Actions</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Identify</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Role / Status</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="user-table-body" class="divide-y divide-white/5">
-                        <!-- Users will be injected here -->
-                    </tbody>
+                    <tbody id="user-table" class="divide-y divide-white/5"></tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- SECTION: FLEET -->
+        <div id="section-fleet" class="admin-section hidden space-y-8">
+            <header class="flex justify-between items-center">
+                <h1 class="text-3xl font-black italic">Fleet <span class="text-indigo-400">Management</span></h1>
+                <button onclick="openVehicleModal()" class="btn-primary !w-auto px-8 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest">Add Vehicle</button>
+            </header>
+            <div id="fleet-grid" class="grid grid-cols-3 gap-6"></div>
         </div>
 
         <!-- SECTION: PAYMENTS -->
-        <div id="section-payments" class="admin-section hidden space-y-6">
-            <h2 class="text-2xl font-black italic text-emerald-400">Transaction Oversight</h2>
-            <div class="glass rounded-3xl border border-white/5 overflow-hidden overflow-x-auto">
+        <div id="section-payments" class="admin-section hidden space-y-8">
+            <header class="flex justify-between items-center">
+                <h1 class="text-3xl font-black italic">Transaction <span class="text-emerald-400">Log</span></h1>
+                <select id="payment-filter" onchange="loadPayments()" class="glass px-6 py-3 rounded-2xl border-none text-sm outline-none bg-[#0f172a]">
+                    <option value="">All Statuses</option>
+                    <option value="Success">Successful</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                </select>
+            </header>
+            <div class="glass rounded-[32px] border border-white/5 overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-white/5 border-b border-white/5">
                         <tr>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Transaction ID</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Amount</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Status</th>
-                            <th class="p-6 text-[10px] font-black uppercase tracking-widest text-white/40">Date</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Reference</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Amount</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Status</th>
+                            <th class="p-6 text-[10px] font-black text-white/30 uppercase tracking-widest">Timestamp</th>
                         </tr>
                     </thead>
-                    <tbody id="payment-table-body" class="divide-y divide-white/5">
-                        <!-- Payments will be injected here -->
-                    </tbody>
+                    <tbody id="payment-table" class="divide-y divide-white/5"></tbody>
                 </table>
             </div>
         </div>
 
-    </div>
+    </main>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // --- 1. NAVIGATION ---
-        function showSection(sectionId) {
+        let revenueChart = null;
+
+        async function showSection(sectionId) {
             document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
             document.getElementById(`section-${sectionId}`).classList.remove('hidden');
             
-            document.querySelectorAll('.admin-nav-item').forEach(i => {
-                i.classList.remove('active');
-                i.querySelector('i').classList.replace('text-indigo-400', 'text-white/40');
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('active');
+                b.querySelector('i').classList.replace('text-indigo-400', 'text-white/40');
             });
-            
-            const activeItem = event.currentTarget;
-            activeItem.classList.add('active');
-            activeItem.querySelector('i').classList.replace('text-white/40', 'text-indigo-400');
+            event.currentTarget.classList.add('active');
+            event.currentTarget.querySelector('i').classList.replace('text-white/40', 'text-indigo-400');
 
-            // Trigger data load
-            if (sectionId === 'overview') loadStats();
-            if (sectionId === 'users') loadUsers();
-            if (sectionId === 'payments') loadPayments();
+            if (sectionId === 'overview') await loadStats();
+            if (sectionId === 'users') await loadUsers();
+            if (sectionId === 'fleet') await loadFleet();
+            if (sectionId === 'payments') await loadPayments();
         }
 
-        // --- 2. DATA LOADERS ---
         async function loadStats() {
-            try {
-                const res = await fetch('/api/AdminApi/stats');
-                const data = await res.json();
-                
-                document.getElementById('stat-revenue').innerText = `UGX ${data.totalRevenueToday.toLocaleString()}`;
-                document.getElementById('stat-trips').innerText = data.totalTripsToday;
-                document.getElementById('stat-fleet').innerText = data.activeVehicles;
-                document.getElementById('stat-occupancy').innerText = `${data.occupancyRate}%`;
+            const res = await fetch('/api/AdminApi/stats');
+            const data = await res.json();
+            
+            document.getElementById('stat-revenue').innerText = `UGX ${data.totalRevenueToday.toLocaleString()}`;
+            document.getElementById('stat-trips').innerText = data.totalTripsToday;
+            document.getElementById('stat-fleet').innerText = data.activeVehicles;
+            document.getElementById('stat-occupancy').innerText = `${data.occupancyRate}%`;
 
-                renderChart(data.revenueTrend);
-            } catch (e) { console.error(e); }
+            renderChart(data.revenueTrend);
         }
 
         async function loadUsers() {
-            try {
-                const res = await fetch('/api/AdminApi/users');
-                const users = await res.json();
-                const body = document.getElementById('user-table-body');
-                
-                body.innerHTML = users.map(u => `
-                    <tr>
-                        <td class="p-6 text-sm font-bold text-white">${u.name}</td>
-                        <td class="p-6 text-sm text-white/60">${u.email}</td>
-                        <td class="p-6">
-                            <span class="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">${u.role}</span>
-                        </td>
-                        <td class="p-6">
-                            <button class="text-[10px] font-black text-indigo-400 hover:text-white transition-colors">EDIT</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.error(e); }
+            const res = await fetch('/api/AdminApi/users');
+            const users = await res.json();
+            document.getElementById('user-table').innerHTML = users.map(u => `
+                <tr class="group hover:bg-white/5 transition-all">
+                    <td class="p-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-bold text-indigo-400">${u.name[0]}</div>
+                            <div>
+                                <p class="font-bold text-white text-sm">${u.name}</p>
+                                <p class="text-xs text-white/30">${u.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[10px] font-black uppercase tracking-widest ${u.lockoutEnd ? 'text-red-400' : 'text-indigo-400'}">
+                                ${u.lockoutEnd ? 'Banned' : u.role}
+                            </span>
+                            <span class="text-[9px] text-white/20">${u.phoneNumber || 'No Phone'}</span>
+                        </div>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex gap-2">
+                            <button onclick="banUser('${u.id}')" class="p-2 hover:text-red-400 transition-colors"><i class="fas fa-ban"></i></button>
+                            <button onclick="deleteUser('${u.id}')" class="p-2 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadFleet() {
+            const res = await fetch('/api/AdminApi/vehicles');
+            const vehicles = await res.json();
+            document.getElementById('fleet-grid').innerHTML = vehicles.map(v => `
+                <div class="glass p-8 rounded-[32px] border border-white/5 hover:border-indigo-500/30 transition-all group">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                            <i class="fas fa-bus text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-black uppercase tracking-widest ${v.isActive ? 'text-green-400' : 'text-red-400'}">
+                            ${v.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                    <h4 class="text-2xl font-black text-white italic mb-1">${v.plateNumber}</h4>
+                    <p class="text-white/30 text-xs font-bold uppercase tracking-widest mb-6">${v.model}</p>
+                    <div class="pt-6 border-t border-white/5 flex justify-between">
+                        <div>
+                            <p class="text-[9px] font-black text-white/20 uppercase">Capacity</p>
+                            <p class="font-bold text-white text-sm">${v.capacity} Seats</p>
+                        </div>
+                        <button class="text-indigo-400 hover:text-white transition-colors"><i class="fas fa-edit"></i></button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function loadPayments() {
-            try {
-                const res = await fetch('/api/AdminApi/payments');
-                const payments = await res.json();
-                const body = document.getElementById('payment-table-body');
-                
-                body.innerHTML = payments.map(p => `
-                    <tr>
-                        <td class="p-6 text-sm font-mono text-indigo-400">${p.transactionId || 'PENDING'}</td>
-                        <td class="p-6 text-sm font-bold text-white">UGX ${p.amount.toLocaleString()}</td>
-                        <td class="p-6 text-[10px] font-black uppercase tracking-widest ${p.status === 'Success' ? 'text-green-400' : 'text-yellow-400'}">${p.status}</td>
-                        <td class="p-6 text-sm text-white/40">${new Date(p.initiatedAt).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.error(e); }
+            const status = document.getElementById('payment-filter').value;
+            const res = await fetch(`/api/AdminApi/payments?status=${status}`);
+            const payments = await res.json();
+            document.getElementById('payment-table').innerHTML = payments.map(p => `
+                <tr class="group hover:bg-white/5 transition-all">
+                    <td class="p-6">
+                        <p class="font-mono text-xs text-indigo-400">${p.transactionId || 'N/A'}</p>
+                        <p class="text-[9px] text-white/20 uppercase font-bold">${p.provider}</p>
+                    </td>
+                    <td class="p-6">
+                        <p class="font-black text-white">UGX ${p.amount.toLocaleString()}</p>
+                    </td>
+                    <td class="p-6">
+                        <span class="text-[10px] font-black uppercase tracking-widest ${p.status === 'Success' ? 'text-green-400' : 'text-yellow-500'}">
+                            ${p.status}
+                        </span>
+                    </td>
+                    <td class="p-6 text-xs text-white/30">${new Date(p.initiatedAt).toLocaleString()}</td>
+                </tr>
+            `).join('');
         }
 
-        // --- 3. CHART LOGIC ---
-        let revChart = null;
         function renderChart(trendData) {
             const ctx = document.getElementById('revenueChart').getContext('2d');
-            if (revChart) revChart.destroy();
-
-            revChart = new Chart(ctx, {
+            if (revenueChart) revenueChart.destroy();
+            revenueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -200,14 +272,15 @@
                         label: 'Revenue',
                         data: trendData,
                         borderColor: '#818cf8',
-                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        backgroundColor: 'rgba(129, 140, 248, 0.05)',
                         borderWidth: 4,
                         tension: 0.4,
                         fill: true,
                         pointBackgroundColor: '#818cf8',
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
-                        pointRadius: 6
+                        pointRadius: 6,
+                        pointHoverRadius: 8
                     }]
                 },
                 options: {
@@ -216,19 +289,25 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         y: { 
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } }
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10, weight: 'bold' } }
                         },
                         x: { 
                             grid: { display: false },
-                            ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } }
+                            ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10, weight: 'bold' } }
                         }
                     }
                 }
             });
         }
 
-        // Initial load
+        async function banUser(id) {
+            if (confirm('Ban this user indefinitely?')) {
+                await fetch(`/api/AdminApi/users/${id}/ban`, { method: 'POST' });
+                loadUsers();
+            }
+        }
+
         window.onload = loadStats;
     </script>
 }

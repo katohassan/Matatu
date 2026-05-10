@@ -61,7 +61,8 @@ namespace MatatuMVC.Controllers
                 u.Email,
                 u.Role,
                 u.PhoneNumber,
-                u.EmailConfirmed
+                u.EmailConfirmed,
+                u.LockoutEnd
             }));
         }
 
@@ -70,11 +71,29 @@ namespace MatatuMVC.Controllers
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return NotFound();
-
             user.Role = newRole;
             await _userManager.UpdateAsync(user);
-            
-            await LogAction("ChangeRole", userId, $"Changed role to {newRole}");
+            await LogAction("ChangeRole", user.Email, $"Changed role to {newRole}");
+            return Ok();
+        }
+
+        [HttpPost("users/{userId}/ban")]
+        public async Task<IActionResult> BanUser(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+            await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+            await LogAction("BanUser", user.Email, "User banned indefinitely");
+            return Ok();
+        }
+
+        [HttpDelete("users/{userId}")]
+        public async Task<IActionResult> DeleteUser(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+            await _userManager.DeleteAsync(user);
+            await LogAction("DeleteUser", user.Email, "User account deleted");
             return Ok();
         }
 
@@ -82,67 +101,77 @@ namespace MatatuMVC.Controllers
         [HttpGet("trips")]
         public async Task<IActionResult> GetAllTrips()
         {
-            var trips = await _context.Trips
-                .Include(t => t.Vehicle)
-                .Include(t => t.Route)
-                .OrderByDescending(t => t.StartTime)
-                .Take(50)
-                .ToListAsync();
-
-            return Ok(trips.Select(t => new {
-                t.Id,
-                route = t.Route?.Name,
-                vehicle = t.Vehicle?.PlateNumber,
-                t.StartTime,
-                t.Status,
-                t.PassengerCount
-            }));
+            var trips = await _context.Trips.Include(t => t.Vehicle).Include(t => t.Route).OrderByDescending(t => t.StartTime).ToListAsync();
+            return Ok(trips);
         }
 
-        // --- 4. VEHICLE & ROUTE MANAGEMENT ---
+        [HttpPost("trips")]
+        public async Task<IActionResult> CreateTrip([FromBody] Trip trip)
+        {
+            _context.Trips.Add(trip);
+            await _context.SaveChangesAsync();
+            await LogAction("CreateTrip", $"Trip {trip.Id}", $"Route: {trip.RouteId}, Vehicle: {trip.VehicleId}");
+            return Ok(trip);
+        }
+
+        [HttpDelete("trips/{id}")]
+        public async Task<IActionResult> CancelTrip(int id)
+        {
+            var trip = await _context.Trips.FindAsync(id);
+            if (trip == null) return NotFound();
+            trip.Status = TripStatus.Cancelled;
+            await _context.SaveChangesAsync();
+            await LogAction("CancelTrip", $"Trip {id}", "Trip status set to Cancelled");
+            return Ok();
+        }
+
+        // --- 4. VEHICLE MANAGEMENT ---
         [HttpGet("vehicles")]
         public async Task<IActionResult> GetVehicles() => Ok(await _context.Vehicles.ToListAsync());
 
         [HttpPost("vehicles")]
-        public async Task<IActionResult> AddVehicle([FromBody] Vehicle vehicle)
+        public async Task<IActionResult> UpsertVehicle([FromBody] Vehicle vehicle)
         {
-            _context.Vehicles.Add(vehicle);
+            if (vehicle.Id == 0) _context.Vehicles.Add(vehicle);
+            else _context.Vehicles.Update(vehicle);
             await _context.SaveChangesAsync();
-            await LogAction("AddVehicle", vehicle.PlateNumber, "New vehicle registered");
+            await LogAction("UpsertVehicle", vehicle.PlateNumber, "Vehicle details updated");
             return Ok(vehicle);
         }
 
+        [HttpDelete("vehicles/{id}")]
+        public async Task<IActionResult> DeleteVehicle(int id)
+        {
+            var vehicle = await _context.Vehicles.FindAsync(id);
+            if (vehicle == null) return NotFound();
+            _context.Vehicles.Remove(vehicle);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        // --- 5. ROUTE MANAGEMENT ---
         [HttpGet("routes")]
         public async Task<IActionResult> GetRoutes() => Ok(await _context.Routes.ToListAsync());
 
         [HttpPost("routes")]
-        public async Task<IActionResult> AddRoute([FromBody] MatatuRoute route)
+        public async Task<IActionResult> UpsertRoute([FromBody] MatatuRoute route)
         {
-            _context.Routes.Add(route);
+            if (route.Id == 0) _context.Routes.Add(route);
+            else _context.Routes.Update(route);
             await _context.SaveChangesAsync();
-            await LogAction("AddRoute", route.Name, $"Fare set to {route.Fare}");
             return Ok(route);
         }
 
-        // --- 5. PAYMENT OVERSIGHT ---
+        // --- 6. PAYMENT OVERSIGHT ---
         [HttpGet("payments")]
-        public async Task<IActionResult> GetPayments()
+        public async Task<IActionResult> GetPayments(string? status)
         {
-            var payments = await _context.Payments
-                .Include(p => p.Ticket)
-                .OrderByDescending(p => p.InitiatedAt)
-                .Take(100)
-                .ToListAsync();
-
-            return Ok(payments.Select(p => new {
-                p.Id,
-                p.TransactionId,
-                p.Amount,
-                p.Status,
-                p.Provider,
-                p.InitiatedAt,
-                ticketCode = p.Ticket?.TicketCode
-            }));
+            var query = _context.Payments.Include(p => p.Ticket).AsQueryable();
+            if (!string.IsNullOrEmpty(status)) {
+                if (Enum.TryParse<PaymentStatus>(status, out var pStatus))
+                    query = query.Where(p => p.Status == pStatus);
+            }
+            return Ok(await query.OrderByDescending(p => p.InitiatedAt).ToListAsync());
         }
 
         // --- HELPERS ---
