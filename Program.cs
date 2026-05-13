@@ -111,8 +111,16 @@ using (var scope = app.Services.CreateScope())
             Role = Role.Passenger,
             EmailConfirmed = true
         };
-        await userManager.CreateAsync(user, "Hassan@2026");
-        Console.WriteLine(">>> SYSTEM: SEEDED PASSENGER ACCOUNT: hassankato272@gmail.com");
+        await userManager.CreateAsync(user, "Hassan@20");
+    }
+    else
+    {
+        // FORCE PASSWORD & ROLE RESET FOR TESTING
+        var token = await userManager.GeneratePasswordResetTokenAsync(hassanUser);
+        await userManager.ResetPasswordAsync(hassanUser, token, "Hassan@20");
+        hassanUser.Role = Role.Passenger;
+        await userManager.UpdateAsync(hassanUser);
+        Console.WriteLine(">>> SYSTEM: FORCED PASSWORD/ROLE RESET FOR: hassankato272@gmail.com");
     }
 }
 
