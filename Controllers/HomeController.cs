@@ -30,12 +30,12 @@ public class HomeController : Controller
     }
 
     [Authorize]
-    public async Task<IActionResult> Dashboard()
+    public async Task<IActionResult> Dashboard(bool viewAsUser = false)
     {
         var user = await _userManager.GetUserAsync(User);
         
-        // REDIRECT ADMINS TO COMMAND CENTER
-        if (user != null && (user.Role == Role.Admin || user.Role == Role.Owner))
+        // REDIRECT ADMINS TO COMMAND CENTER UNLESS THEY WANT TO VIEW AS USER
+        if (user != null && (user.Role == Role.Admin || user.Role == Role.Owner) && !viewAsUser)
         {
             return RedirectToAction("Index", "Admin");
         }
