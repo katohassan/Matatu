@@ -99,6 +99,21 @@ using (var scope = app.Services.CreateScope())
         };
         await userManager.CreateAsync(driver, "Driver@123");
     }
+
+    // 3. Seed Passenger User (Hassan Kato)
+    var hassanUser = await userManager.FindByEmailAsync("hassankato272@gmail.com");
+    if (hassanUser == null)
+    {
+        var user = new User {
+            UserName = "hassankato272@gmail.com",
+            Email = "hassankato272@gmail.com",
+            Name = "Hassan Kato",
+            Role = Role.Passenger,
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(user, "Hassan@2026");
+        Console.WriteLine(">>> SYSTEM: SEEDED PASSENGER ACCOUNT: hassankato272@gmail.com");
+    }
 }
 
 if (!app.Environment.IsDevelopment())
